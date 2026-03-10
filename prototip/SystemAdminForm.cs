@@ -71,7 +71,15 @@ namespace prototip
         /// </summary>
         private void btnExit_Click(object sender, EventArgs e)
         {
-            this.Close();
+            // Скрываем текущую форму администратора
+            this.Visible = false;
+
+            // Создаем и открываем форму авторизации
+            Autorisation auto = new Autorisation();
+            auto.ShowDialog();
+
+            // После закрытия формы авторизации снова показываем форму администратора
+            this.Visible = true;
         }
 
         /// <summary>
@@ -388,7 +396,7 @@ namespace prototip
         {
             try
             {
-                // Чтение CSV файла
+                // Чтение CSV файла с явным указанием кодировки UTF-8
                 var lines = File.ReadAllLines(filePath, Encoding.UTF8)
                     .Where(l => !string.IsNullOrWhiteSpace(l))
                     .ToArray();
@@ -413,12 +421,21 @@ namespace prototip
                     return;
                 }
 
+                // ПОЛУЧАЕМ СПИСОК АВТОИНКРЕМЕНТНЫХ ПОЛЕЙ
+                List<string> autoIncrementColumns = GetAutoIncrementColumns(tableName);
+
                 // Определяем разделитель (; или ,)
                 char separator = lines[0].Contains(';') ? ';' : ',';
 
                 // Проверка заголовков (первая строка может содержать названия колонок)
                 string[] headers = lines[0].Split(separator);
                 int startRow = 0;
+
+                // ОЧИЩАЕМ ЗАГОЛОВКИ ОТ КАВЫЧЕК
+                for (int h = 0; h < headers.Length; h++)
+                {
+                    headers[h] = headers[h].Trim().Trim('"').Trim('\'');
+                }
 
                 // Проверяем, является ли первая строка заголовками
                 bool hasHeader = false;
@@ -437,13 +454,19 @@ namespace prototip
                     LogMessage($"✓ Обнаружена строка заголовков, импорт начнется со строки 2");
                 }
 
-                // Проверка соответствия количества полей
+                // ОПРЕДЕЛЯЕМ КОЛИЧЕСТВО ПОЛЕЙ ДЛЯ ВСТАВКИ (без автоинкрементных)
+                int expectedColumns = tableSchema.Columns.Count - autoIncrementColumns.Count;
+
+                // Проверка соответствия количества полей в первой строке данных
                 string[] firstDataRow = lines[startRow].Split(separator);
-                if (firstDataRow.Length != tableSchema.Columns.Count)
+
+                if (firstDataRow.Length != expectedColumns)
                 {
                     string errorMsg = $"Несоответствие количества полей!\n" +
                                     $"В CSV файле: {firstDataRow.Length} полей\n" +
-                                    $"В таблице '{tableName}': {tableSchema.Columns.Count} полей\n\n" +
+                                    $"В таблице '{tableName}': {tableSchema.Columns.Count} полей\n" +
+                                    $"Автоинкрементные поля (не нужно в CSV): {string.Join(", ", autoIncrementColumns)}\n" +
+                                    $"Ожидаемое количество полей в CSV: {expectedColumns}\n\n" +
                                     $"Структура таблицы:\n" +
                                     string.Join(", ", tableSchema.Columns.Cast<DataColumn>().Select(c => c.ColumnName));
 
@@ -456,37 +479,118 @@ namespace prototip
                     return;
                 }
 
+                // СОЗДАЕМ МЭППИНГ ПОЛЕЙ - какие колонки таблицы соответствуют колонкам CSV
+                List<int> columnMapping = new List<int>();
+
+                if (hasHeader)
+                {
+                    // Если есть заголовки, сопоставляем по именам
+                    for (int i = 0; i < headers.Length; i++)
+                    {
+                        string header = headers[i];
+                        if (tableSchema.Columns.Contains(header) && !autoIncrementColumns.Contains(header))
+                        {
+                            columnMapping.Add(tableSchema.Columns[header].Ordinal);
+                        }
+                    }
+                }
+                else
+                {
+                    // Если нет заголовков, предполагаем, что порядок полей правильный (без автоинкрементных)
+                    for (int i = 0; i < tableSchema.Columns.Count; i++)
+                    {
+                        string colName = tableSchema.Columns[i].ColumnName;
+                        if (!autoIncrementColumns.Contains(colName))
+                        {
+                            columnMapping.Add(i);
+                        }
+                    }
+                }
+
                 int importedCount = 0;
                 int errorCount = 0;
                 List<string> errors = new List<string>();
 
-                using (MySqlConnection conn = new MySqlConnection(connectionString))
+                // Добавляем настройки подключения для поддержки кириллицы
+                string connectionStringWithCharset = connectionString + ";Charset=utf8;";
+
+                using (MySqlConnection conn = new MySqlConnection(connectionStringWithCharset))
                 {
                     conn.Open();
 
+                    // Устанавливаем кодировку для соединения
+                    MySqlCommand setCharsetCmd = new MySqlCommand("SET NAMES 'utf8mb4'", conn);
+                    setCharsetCmd.ExecuteNonQuery();
+
                     for (int i = startRow; i < lines.Length; i++)
                     {
-                        string[] values = lines[i].Split(separator);
+                        string line = lines[i].Trim();
+                        if (string.IsNullOrEmpty(line)) continue;
+
+                        // Убираем кавычки из всей строки
+                        line = line.Replace("\"", "");
+                        string[] values = line.Split(separator);
 
                         try
                         {
-                            string query = GenerateInsertQuery(tableName, tableSchema);
+                            // ГЕНЕРИРУЕМ ЗАПРОС ТОЛЬКО ДЛЯ НУЖНЫХ ПОЛЕЙ
+                            string query = GenerateInsertQuery(tableName, tableSchema, autoIncrementColumns);
                             MySqlCommand cmd = new MySqlCommand(query, conn);
 
-                            for (int j = 0; j < values.Length; j++)
+                            int paramIndex = 0;
+                            for (int j = 0; j < columnMapping.Count; j++)
                             {
-                                string paramName = $"@p{j}";
-                                string value = values[j].Trim().Trim('"').Trim('\'');
+                                int tableColIndex = columnMapping[j];
+                                string value = values[j].Trim();
+
+                                // Определяем тип колонки
+                                Type columnType = tableSchema.Columns[tableColIndex].DataType;
 
                                 // Преобразование пустых строк в NULL
                                 if (string.IsNullOrEmpty(value))
                                 {
-                                    cmd.Parameters.AddWithValue(paramName, DBNull.Value);
+                                    cmd.Parameters.AddWithValue($"@p{paramIndex}", DBNull.Value);
                                 }
                                 else
                                 {
-                                    cmd.Parameters.AddWithValue(paramName, value);
+                                    // Пытаемся преобразовать значение в соответствующий тип
+                                    try
+                                    {
+                                        if (columnType == typeof(int) || columnType == typeof(long))
+                                        {
+                                            if (int.TryParse(value, out int intValue))
+                                                cmd.Parameters.AddWithValue($"@p{paramIndex}", intValue);
+                                            else
+                                                throw new Exception($"Не удалось преобразовать '{value}' в число");
+                                        }
+                                        else if (columnType == typeof(decimal) || columnType == typeof(double))
+                                        {
+                                            // Заменяем точку на запятую для десятичных чисел
+                                            value = value.Replace('.', ',');
+                                            if (decimal.TryParse(value, out decimal decValue))
+                                                cmd.Parameters.AddWithValue($"@p{paramIndex}", decValue);
+                                            else
+                                                throw new Exception($"Не удалось преобразовать '{value}' в число");
+                                        }
+                                        else if (columnType == typeof(DateTime))
+                                        {
+                                            if (DateTime.TryParse(value, out DateTime dateValue))
+                                                cmd.Parameters.AddWithValue($"@p{paramIndex}", dateValue);
+                                            else
+                                                throw new Exception($"Не удалось преобразовать '{value}' в дату");
+                                        }
+                                        else
+                                        {
+                                            // Для строковых полей
+                                            cmd.Parameters.Add($"@p{paramIndex}", MySqlDbType.VarChar).Value = value;
+                                        }
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        throw new Exception($"Ошибка преобразования значения '{value}' в тип {columnType.Name}: {ex.Message}");
+                                    }
                                 }
+                                paramIndex++;
                             }
 
                             cmd.ExecuteNonQuery();
@@ -543,9 +647,15 @@ namespace prototip
         {
             try
             {
-                using (MySqlConnection conn = new MySqlConnection(connectionString))
+                string connectionStringWithCharset = connectionString + ";Charset=utf8;";
+                using (MySqlConnection conn = new MySqlConnection(connectionStringWithCharset))
                 {
                     conn.Open();
+
+                    // Устанавливаем кодировку
+                    MySqlCommand setCharsetCmd = new MySqlCommand("SET NAMES 'utf8mb4'", conn);
+                    setCharsetCmd.ExecuteNonQuery();
+
                     string query = $"SELECT * FROM {tableName} LIMIT 0";
                     MySqlDataAdapter adapter = new MySqlDataAdapter(query, conn);
                     DataTable schema = new DataTable();
@@ -553,8 +663,9 @@ namespace prototip
                     return schema;
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                LogMessage($"Ошибка получения схемы таблицы: {ex.Message}");
                 return null;
             }
         }
@@ -562,12 +673,18 @@ namespace prototip
         /// <summary>
         /// Генерация SQL-запроса для вставки данных
         /// </summary>
-        private string GenerateInsertQuery(string tableName, DataTable schema)
+        private string GenerateInsertQuery(string tableName, DataTable schema, List<string> autoIncrementColumns)
         {
-            string columns = string.Join(", ", schema.Columns.Cast<DataColumn>().Select(c => c.ColumnName));
-            string parameters = string.Join(", ", Enumerable.Range(0, schema.Columns.Count).Select(i => $"@p{i}"));
+            // Берем только те поля, которые не являются автоинкрементными
+            var columns = schema.Columns.Cast<DataColumn>()
+                .Where(c => !autoIncrementColumns.Contains(c.ColumnName))
+                .Select(c => $"`{c.ColumnName}`")
+                .ToList();
 
-            return $"INSERT INTO {tableName} ({columns}) VALUES ({parameters})";
+            string columnsStr = string.Join(", ", columns);
+            string parameters = string.Join(", ", Enumerable.Range(0, columns.Count).Select(i => $"@p{i}"));
+
+            return $"INSERT INTO `{tableName}` ({columnsStr}) VALUES ({parameters})";
         }
 
         /// <summary>
@@ -592,6 +709,154 @@ namespace prototip
         private void btnClearLog_Click(object sender, EventArgs e)
         {
             txtLog.Clear();
+        }
+
+
+        private void ImportDataSmart(string tableName, string filePath)
+        {
+            try
+            {
+                var lines = File.ReadAllLines(filePath, Encoding.UTF8)
+                    .Where(l => !string.IsNullOrWhiteSpace(l))
+                    .ToArray();
+
+                if (lines.Length < 2)
+                {
+                    MessageBox.Show("Файл должен содержать заголовок и данные");
+                    return;
+                }
+
+                // Получаем заголовки из первой строки
+                string[] headers = lines[0].Split(';');
+
+                // Получаем схему таблицы
+                DataTable schema = GetTableSchema(tableName);
+
+                // Определяем, какие поля из CSV соответствуют полям таблицы
+                // Исключаем автоинкрементные поля
+                List<int> columnIndexes = new List<int>();
+                List<string> columnNames = new List<string>();
+
+                // Получаем список автоинкрементных полей
+                List<string> autoIncrementColumns = GetAutoIncrementColumns(tableName);
+
+                for (int i = 0; i < headers.Length; i++)
+                {
+                    string header = headers[i].Trim();
+                    if (schema.Columns.Contains(header) && !autoIncrementColumns.Contains(header))
+                    {
+                        columnIndexes.Add(i);
+                        columnNames.Add(header);
+                    }
+                }
+
+                string connectionStringWithCharset = connectionString + ";Charset=utf8;";
+                int importedCount = 0;
+                int errorCount = 0;
+
+                using (MySqlConnection conn = new MySqlConnection(connectionStringWithCharset))
+                {
+                    conn.Open();
+
+                    // Устанавливаем кодировку
+                    MySqlCommand setCharsetCmd = new MySqlCommand("SET NAMES 'utf8mb4'", conn);
+                    setCharsetCmd.ExecuteNonQuery();
+
+                    // Формируем запрос
+                    string columns = string.Join(", ", columnNames);
+                    string parameters = string.Join(", ", columnNames.Select(c => "@" + c));
+                    string query = $"INSERT INTO {tableName} ({columns}) VALUES ({parameters})";
+
+                    for (int i = 1; i < lines.Length; i++)
+                    {
+                        try
+                        {
+                            string[] values = lines[i].Split(';');
+
+                            MySqlCommand cmd = new MySqlCommand(query, conn);
+
+                            for (int j = 0; j < columnIndexes.Count; j++)
+                            {
+                                int colIndex = columnIndexes[j];
+                                string colName = columnNames[j];
+                                string value = values[colIndex].Trim();
+
+                                // Определяем тип колонки
+                                Type colType = schema.Columns[colName].DataType;
+
+                                if (colType == typeof(int) || colType == typeof(long))
+                                {
+                                    cmd.Parameters.AddWithValue("@" + colName, int.Parse(value));
+                                }
+                                else if (colType == typeof(decimal))
+                                {
+                                    cmd.Parameters.AddWithValue("@" + colName, decimal.Parse(value.Replace('.', ',')));
+                                }
+                                else
+                                {
+                                    cmd.Parameters.AddWithValue("@" + colName, value);
+                                }
+                            }
+
+                            cmd.ExecuteNonQuery();
+                            importedCount++;
+                        }
+                        catch (Exception ex)
+                        {
+                            errorCount++;
+                            LogMessage($"Ошибка в строке {i + 1}: {ex.Message}");
+                        }
+                    }
+                }
+
+                LogMessage($"\nИмпорт {tableName} завершен:");
+                LogMessage($"Успешно: {importedCount}");
+                LogMessage($"Ошибок: {errorCount}");
+
+                MessageBox.Show($"Импорт {tableName} завершен!\nДобавлено: {importedCount}\nОшибок: {errorCount}");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка: {ex.Message}");
+            }
+        }
+
+        private List<string> GetAutoIncrementColumns(string tableName)
+        {
+            List<string> autoIncrementCols = new List<string>();
+
+            try
+            {
+                using (MySqlConnection conn = new MySqlConnection(connectionString))
+                {
+                    conn.Open();
+
+                    // Запрос для получения информации о автоинкрементных полях
+                    string query = @"
+                SELECT COLUMN_NAME 
+                FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE TABLE_SCHEMA = DATABASE() 
+                AND TABLE_NAME = @tableName 
+                AND EXTRA LIKE '%auto_increment%'";
+
+                    MySqlCommand cmd = new MySqlCommand(query, conn);
+                    cmd.Parameters.AddWithValue("@tableName", tableName);
+
+                    using (MySqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            autoIncrementCols.Add(reader["COLUMN_NAME"].ToString());
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"Ошибка получения автоинкрементных полей: {ex.Message}");
+            }
+
+            return autoIncrementCols;
         }
     }
 }

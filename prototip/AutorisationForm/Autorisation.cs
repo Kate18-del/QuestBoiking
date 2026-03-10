@@ -55,65 +55,61 @@ namespace prototip
             {
                 try
                 {
-                    // Открываем соединение с базой данных
                     conn.Open();
 
-                    // Хэшируем введенный пароль для сравнения с хранящимся в БД
+                    // Проверка учетной записи системного администратора по умолчанию
+                    if (login == "admin" && password == "admin")
+                    {
+                        MessageBox.Show("Добро пожаловать, системный администратор!", "Успешный вход");
+                        this.Hide();
+                        new SystemAdminForm(login).ShowDialog();
+                        this.Close();
+                        return;
+                    }
+
                     string hashedPassword = ComputeSha256Hash(password);
 
-                    // SQL-запрос для получения данных пользователя по логину и паролю
                     MySqlCommand cmd = new MySqlCommand(
                         "SELECT UserID, Login, FIO, IDRole FROM users WHERE Login = @login AND Password = @password",
                         conn);
 
-                    // Добавляем параметры для защиты от SQL-инъекций
                     cmd.Parameters.AddWithValue("@login", login);
                     cmd.Parameters.AddWithValue("@password", hashedPassword);
 
-                    // Выполняем запрос и получаем результат в виде DataReader
                     using (MySqlDataReader reader = cmd.ExecuteReader())
                     {
-                        // Если пользователь найден (есть хотя бы одна запись)
                         if (reader.Read())
                         {
-                            // Извлекаем данные пользователя из результата запроса
                             int userId = Convert.ToInt32(reader["UserID"]);
                             string userLogin = reader["Login"].ToString();
                             string fio = reader["FIO"].ToString();
                             int roleId = Convert.ToInt32(reader["IDRole"]);
 
-                            // Сохраняем данные текущего пользователя в статическом классе CurrentUser
                             CurrentUser.UserID = userId;
                             CurrentUser.Login = userLogin;
                             CurrentUser.FIO = fio;
                             CurrentUser.Role = roleId;
 
-                            // Показываем приветственное сообщение
                             MessageBox.Show($"Добро пожаловать, {fio}!", "Успешный вход");
-
-                            // Скрываем форму авторизации
                             this.Hide();
 
-                            // Открываем соответствующую главную форму в зависимости от роли пользователя
-                            if (roleId == 1) // Администратор (IDRole = 1)
+                            if (roleId == 1)
                             {
                                 new MainAdmin().ShowDialog();
                             }
-                            else if (roleId == 2) // Директор (IDRole = 2)
+                            else if (roleId == 2)
                             {
                                 new MainDirector().ShowDialog();
                             }
-                            else // Менеджер (все остальные роли)
+                            else
                             {
                                 new MainManager().ShowDialog();
                             }
 
-                            // Закрываем форму авторизации после завершения работы главной формы
                             this.Close();
                         }
                         else
                         {
-                            // Если пользователь не найден, показываем сообщение об ошибке
                             MessageBox.Show("Неверный логин или пароль");
                         }
                     }

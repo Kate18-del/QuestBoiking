@@ -92,3 +92,4 @@ D:\СерДер\Autorisation\prototip\prototip\obj\Release\prototip.ViewingOrder
 D:\СерДер\Autorisation\prototip\prototip\obj\Release\prototip.csproj.GenerateResource.cache
 D:\СерДер\Autorisation\prototip\prototip\obj\Release\prototip.csproj.CoreCompileInputs.cache
 D:\СерДер\Autorisation\prototip\prototip\obj\Release\prototip.csproj.CopyComplete
+D:\СерДер\Autorisation\prototip\prototip\obj\Release\prototip.SystemAdminForm.resources

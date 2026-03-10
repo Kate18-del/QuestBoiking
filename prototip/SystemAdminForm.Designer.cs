@@ -35,6 +35,7 @@
 
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SystemAdminForm));
             this.lblWelcome = new System.Windows.Forms.Label();
             this.gbOperation = new System.Windows.Forms.GroupBox();
             this.rbRestore = new System.Windows.Forms.RadioButton();
@@ -78,9 +79,9 @@
             this.gbOperation.Controls.Add(this.rbRestore);
             this.gbOperation.Controls.Add(this.rbImport);
             this.gbOperation.Location = new System.Drawing.Point(17, 57);
-            this.gbOperation.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.gbOperation.Margin = new System.Windows.Forms.Padding(2);
             this.gbOperation.Name = "gbOperation";
-            this.gbOperation.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.gbOperation.Padding = new System.Windows.Forms.Padding(2);
             this.gbOperation.Size = new System.Drawing.Size(752, 66);
             this.gbOperation.TabIndex = 1;
             this.gbOperation.TabStop = false;
@@ -90,7 +91,7 @@
             // 
             this.rbRestore.AutoSize = true;
             this.rbRestore.Location = new System.Drawing.Point(26, 28);
-            this.rbRestore.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.rbRestore.Margin = new System.Windows.Forms.Padding(2);
             this.rbRestore.Name = "rbRestore";
             this.rbRestore.Size = new System.Drawing.Size(243, 19);
             this.rbRestore.TabIndex = 0;
@@ -102,7 +103,7 @@
             // 
             this.rbImport.AutoSize = true;
             this.rbImport.Location = new System.Drawing.Point(306, 28);
-            this.rbImport.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.rbImport.Margin = new System.Windows.Forms.Padding(2);
             this.rbImport.Name = "rbImport";
             this.rbImport.Size = new System.Drawing.Size(150, 19);
             this.rbImport.TabIndex = 1;
@@ -116,7 +117,7 @@
             this.tabControl1.Controls.Add(this.tabImport);
             this.tabControl1.Enabled = false;
             this.tabControl1.Location = new System.Drawing.Point(17, 132);
-            this.tabControl1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.tabControl1.Margin = new System.Windows.Forms.Padding(2);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
             this.tabControl1.Size = new System.Drawing.Size(752, 282);
@@ -126,9 +127,9 @@
             // 
             this.tabRestore.Controls.Add(this.panelRestore);
             this.tabRestore.Location = new System.Drawing.Point(4, 24);
-            this.tabRestore.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.tabRestore.Margin = new System.Windows.Forms.Padding(2);
             this.tabRestore.Name = "tabRestore";
-            this.tabRestore.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.tabRestore.Padding = new System.Windows.Forms.Padding(2);
             this.tabRestore.Size = new System.Drawing.Size(744, 254);
             this.tabRestore.TabIndex = 0;
             this.tabRestore.Text = "Восстановление";
@@ -139,7 +140,7 @@
             this.panelRestore.Controls.Add(this.lblWarning);
             this.panelRestore.Controls.Add(this.btnRestore);
             this.panelRestore.Location = new System.Drawing.Point(17, 18);
-            this.panelRestore.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.panelRestore.Margin = new System.Windows.Forms.Padding(2);
             this.panelRestore.Name = "panelRestore";
             this.panelRestore.Size = new System.Drawing.Size(700, 207);
             this.panelRestore.TabIndex = 0;
@@ -164,7 +165,7 @@
             this.btnRestore.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
             this.btnRestore.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold);
             this.btnRestore.Location = new System.Drawing.Point(219, 132);
-            this.btnRestore.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.btnRestore.Margin = new System.Windows.Forms.Padding(2);
             this.btnRestore.Name = "btnRestore";
             this.btnRestore.Size = new System.Drawing.Size(262, 47);
             this.btnRestore.TabIndex = 0;
@@ -180,21 +181,22 @@
             this.tabImport.Controls.Add(this.lblFile);
             this.tabImport.Controls.Add(this.cmbTables);
             this.tabImport.Controls.Add(this.lblTable);
-            this.tabImport.Location = new System.Drawing.Point(4, 22);
-            this.tabImport.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.tabImport.Location = new System.Drawing.Point(4, 24);
+            this.tabImport.Margin = new System.Windows.Forms.Padding(2);
             this.tabImport.Name = "tabImport";
-            this.tabImport.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this.tabImport.Size = new System.Drawing.Size(744, 256);
+            this.tabImport.Padding = new System.Windows.Forms.Padding(2);
+            this.tabImport.Size = new System.Drawing.Size(744, 254);
             this.tabImport.TabIndex = 1;
             this.tabImport.Text = "Импорт";
             this.tabImport.UseVisualStyleBackColor = true;
             // 
             // btnImportData
             // 
-            this.btnImportData.BackColor = System.Drawing.Color.LightGreen;
+            this.btnImportData.BackColor = System.Drawing.SystemColors.GradientInactiveCaption;
+            this.btnImportData.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
             this.btnImportData.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
             this.btnImportData.Location = new System.Drawing.Point(219, 150);
-            this.btnImportData.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.btnImportData.Margin = new System.Windows.Forms.Padding(2);
             this.btnImportData.Name = "btnImportData";
             this.btnImportData.Size = new System.Drawing.Size(175, 37);
             this.btnImportData.TabIndex = 5;
@@ -206,7 +208,7 @@
             // 
             this.btnSelectFile.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
             this.btnSelectFile.Location = new System.Drawing.Point(534, 89);
-            this.btnSelectFile.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.btnSelectFile.Margin = new System.Windows.Forms.Padding(2);
             this.btnSelectFile.Name = "btnSelectFile";
             this.btnSelectFile.Size = new System.Drawing.Size(35, 27);
             this.btnSelectFile.TabIndex = 4;
@@ -218,7 +220,7 @@
             // 
             this.txtFilePath.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
             this.txtFilePath.Location = new System.Drawing.Point(219, 91);
-            this.txtFilePath.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.txtFilePath.Margin = new System.Windows.Forms.Padding(2);
             this.txtFilePath.Name = "txtFilePath";
             this.txtFilePath.ReadOnly = true;
             this.txtFilePath.Size = new System.Drawing.Size(307, 21);
@@ -241,7 +243,7 @@
             this.cmbTables.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
             this.cmbTables.FormattingEnabled = true;
             this.cmbTables.Location = new System.Drawing.Point(219, 44);
-            this.cmbTables.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.cmbTables.Margin = new System.Windows.Forms.Padding(2);
             this.cmbTables.Name = "cmbTables";
             this.cmbTables.Size = new System.Drawing.Size(219, 23);
             this.cmbTables.TabIndex = 1;
@@ -263,7 +265,7 @@
             this.btnExit.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
             this.btnExit.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
             this.btnExit.Location = new System.Drawing.Point(665, 563);
-            this.btnExit.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.btnExit.Margin = new System.Windows.Forms.Padding(2);
             this.btnExit.Name = "btnExit";
             this.btnExit.Size = new System.Drawing.Size(105, 28);
             this.btnExit.TabIndex = 3;
@@ -275,7 +277,7 @@
             // 
             this.txtLog.Font = new System.Drawing.Font("Consolas", 9F);
             this.txtLog.Location = new System.Drawing.Point(17, 459);
-            this.txtLog.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.txtLog.Margin = new System.Windows.Forms.Padding(2);
             this.txtLog.Multiline = true;
             this.txtLog.Name = "txtLog";
             this.txtLog.ReadOnly = true;
@@ -299,7 +301,7 @@
             this.btnClearLog.BackColor = System.Drawing.SystemColors.GradientInactiveCaption;
             this.btnClearLog.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
             this.btnClearLog.Location = new System.Drawing.Point(665, 432);
-            this.btnClearLog.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.btnClearLog.Margin = new System.Windows.Forms.Padding(2);
             this.btnClearLog.Name = "btnClearLog";
             this.btnClearLog.Size = new System.Drawing.Size(105, 23);
             this.btnClearLog.TabIndex = 6;
@@ -321,7 +323,11 @@
             this.Controls.Add(this.gbOperation);
             this.Controls.Add(this.lblWelcome);
             this.Font = new System.Drawing.Font("Comic Sans MS", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.Margin = new System.Windows.Forms.Padding(2);
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
             this.Name = "SystemAdminForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Системный администратор - Управление БД";

@@ -179,19 +179,11 @@ D:\СерДер\Autorisation\prototip\prototip\bin\Debug\Resources\room3.jpg
 D:\СерДер\Autorisation\prototip\prototip\bin\Debug\prototip.exe.config
 D:\СерДер\Autorisation\prototip\prototip\bin\Debug\prototip.exe
 D:\СерДер\Autorisation\prototip\prototip\bin\Debug\prototip.pdb
-D:\СерДер\Autorisation\prototip\prototip\bin\Debug\Google.Protobuf.dll
-D:\СерДер\Autorisation\prototip\prototip\bin\Debug\ZstdNet.dll
-D:\СерДер\Autorisation\prototip\prototip\bin\Debug\K4os.Compression.LZ4.Streams.dll
-D:\СерДер\Autorisation\prototip\prototip\bin\Debug\BouncyCastle.Crypto.dll
-D:\СерДер\Autorisation\prototip\prototip\bin\Debug\Ubiety.Dns.Core.dll
 D:\СерДер\Autorisation\prototip\prototip\bin\Debug\System.Memory.dll
 D:\СерДер\Autorisation\prototip\prototip\bin\Debug\System.Buffers.dll
-D:\СерДер\Autorisation\prototip\prototip\bin\Debug\K4os.Compression.LZ4.dll
-D:\СерДер\Autorisation\prototip\prototip\bin\Debug\K4os.Hash.xxHash.dll
 D:\СерДер\Autorisation\prototip\prototip\bin\Debug\System.Numerics.Vectors.dll
 D:\СерДер\Autorisation\prototip\prototip\bin\Debug\MySql.Data.xml
 D:\СерДер\Autorisation\prototip\prototip\obj\Debug\prototip.csproj.AssemblyReference.cache
-D:\СерДер\Autorisation\prototip\prototip\obj\Debug\prototip.exe.config
 D:\СерДер\Autorisation\prototip\prototip\obj\Debug\Interop.Microsoft.Office.Core.dll
 D:\СерДер\Autorisation\prototip\prototip\obj\Debug\Interop.Microsoft.Office.Interop.Excel.dll
 D:\СерДер\Autorisation\prototip\prototip\obj\Debug\Interop.VBIDE.dll
@@ -221,3 +213,6 @@ D:\СерДер\Autorisation\prototip\prototip\obj\Debug\prototip.pdb
 C:\Users\Qyterxc\Desktop\курсач\Autorisation\prototip\prototip\obj\Debug\Interop.Microsoft.Office.Core.dll
 C:\Users\Qyterxc\Desktop\курсач\Autorisation\prototip\prototip\obj\Debug\Interop.Microsoft.Office.Interop.Excel.dll
 C:\Users\Qyterxc\Desktop\курсач\Autorisation\prototip\prototip\obj\Debug\Interop.VBIDE.dll
+D:\СерДер\Autorisation\prototip\prototip\bin\Debug\MySql.Data.dll
+D:\СерДер\Autorisation\prototip\prototip\obj\Debug\Interop.Microsoft.Office.Interop.Word.dll
+D:\СерДер\Autorisation\prototip\prototip\obj\Debug\prototip.SystemAdminForm.resources
