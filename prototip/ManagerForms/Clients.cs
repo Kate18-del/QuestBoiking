@@ -76,9 +76,9 @@ namespace prototip
             // Очистка полей ввода (установка плейсхолдеров)
             ClearFormFields();
         }
-
         /// <summary>
         /// Настройка столбцов DataGridView для отображения информации о клиентах
+        /// с маскированием персональных данных
         /// </summary>
         private void ConfigureDataGridView()
         {
@@ -86,9 +86,9 @@ namespace prototip
             dataGridView1.AutoGenerateColumns = false;
 
             // Настройка режимов отображения
-            dataGridView1.ReadOnly = true;           // Только для чтения
-            dataGridView1.AllowUserToAddRows = false; // Запрет добавления строк
-            dataGridView1.SelectionMode = DataGridViewSelectionMode.FullRowSelect; // Выделение всей строки
+            dataGridView1.ReadOnly = true;
+            dataGridView1.AllowUserToAddRows = false;
+            dataGridView1.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
 
             // Установка шрифта
             this.dataGridView1.DefaultCellStyle.Font = new Font("Comic Sans MS", 9);
@@ -96,60 +96,69 @@ namespace prototip
             // Очистка существующих столбцов
             dataGridView1.Columns.Clear();
 
-            // ID клиента (скрытая колонка для хранения идентификатора)
+            // ID клиента (скрытая колонка)
             dataGridView1.Columns.Add(new DataGridViewTextBoxColumn()
             {
                 Name = "ClientID",
                 HeaderText = "ClientID",
                 DataPropertyName = "ClientID",
                 Width = 170,
-                Visible = false, // Скрываем от пользователя
+                Visible = false,
             });
 
-            // Фамилия
+            // Фамилия (с маскировкой)
             dataGridView1.Columns.Add(new DataGridViewTextBoxColumn()
             {
                 Name = "LastName",
                 HeaderText = "Фамилия",
-                DataPropertyName = "LastName",
+                DataPropertyName = "DisplayLastName", // Используем маскированное свойство
                 Width = 170
             });
 
-            // Имя
+            // Имя (с маскировкой)
             dataGridView1.Columns.Add(new DataGridViewTextBoxColumn()
             {
                 Name = "FirstName",
                 HeaderText = "Имя",
-                DataPropertyName = "FirstName",
+                DataPropertyName = "DisplayFirstName", // Используем маскированное свойство
                 Width = 170
             });
 
-            // Отчество
+            // Отчество (с маскировкой)
             dataGridView1.Columns.Add(new DataGridViewTextBoxColumn()
             {
                 Name = "Surname",
                 HeaderText = "Отчество",
-                DataPropertyName = "Surname",
+                DataPropertyName = "DisplaySurname", // Используем маскированное свойство
                 Width = 150
             });
 
-            // Номер телефона
+            // Номер телефона (с маскировкой)
             dataGridView1.Columns.Add(new DataGridViewTextBoxColumn()
             {
                 Name = "PhoneNumber",
                 HeaderText = "Телефон",
-                DataPropertyName = "PhoneNumber",
+                DataPropertyName = "DisplayPhoneNumber", // Используем маскированное свойство
                 Width = 170
             });
 
-            // Возраст
+            // Возраст (скрыт)
             dataGridView1.Columns.Add(new DataGridViewTextBoxColumn()
             {
                 Name = "Age",
                 HeaderText = "Возраст",
-                DataPropertyName = "Age",
+                DataPropertyName = "DisplayAge", // Используем маскированное свойство
                 Width = 170
             });
+
+            // Добавляем колонку с кнопкой для просмотра детальной информации
+            DataGridViewButtonColumn detailsButton = new DataGridViewButtonColumn();
+            detailsButton.Name = "Details";
+            detailsButton.HeaderText = "Детали";
+            detailsButton.Text = "Просмотр";
+            detailsButton.UseColumnTextForButtonValue = true;
+            detailsButton.Width = 100;
+            dataGridView1.Columns.Add(detailsButton);
         }
 
         /// <summary>

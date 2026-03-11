@@ -60,6 +60,12 @@
       <DependentUpon>Autorisation.cs</DependentUpon>
     </Compile>
     <Compile Include="Client.cs" />
+    <Compile Include="ClientDetailForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ClientDetailForm.Designer.cs">
+      <DependentUpon>ClientDetailForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="ClientRepository.cs" />
     <Compile Include="ClientValidator.cs" />
     <Compile Include="CurrentUser.cs" />
@@ -175,6 +181,9 @@
     <Compile Include="UserValidator.cs" />
     <EmbeddedResource Include="AutorisationForm\Autorisation.resx">
       <DependentUpon>Autorisation.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ClientDetailForm.resx">
+      <DependentUpon>ClientDetailForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="ManagerForms\Clients.resx">
       <DependentUpon>Clients.cs</DependentUpon>
