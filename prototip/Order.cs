@@ -26,5 +26,10 @@ namespace prototip
         public string ManagerName { get; set; }
         public int? ParticipantsCount { get; set; }
         public decimal? TotalPrice { get; set; }
+
+
+        // НОВЫЕ свойства для маскированного отображения
+        public string DisplayClientName { get; set; }
+        public string DisplayPhoneNumber { get; set; }
     }
 }

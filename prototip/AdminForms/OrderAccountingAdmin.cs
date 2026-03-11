@@ -28,6 +28,9 @@ namespace prototip
         private DateTimePicker dtpStartDate;  // Начальная дата периода
         private DateTimePicker dtpEndDate;     // Конечная дата периода
 
+        // Флаг для маскировки персональных данных
+        private bool maskPersonalData = true;
+
         /// <summary>
         /// Конструктор формы учета заказов
         /// </summary>
@@ -138,6 +141,7 @@ namespace prototip
 
         /// <summary>
         /// Настройка столбцов DataGridView для отображения информации о заказах
+        /// с маскированием персональных данных
         /// </summary>
         private void ConfigureDataGridView()
         {
@@ -167,7 +171,7 @@ namespace prototip
             {
                 Name = "ClientName",
                 HeaderText = "Клиент",
-                DataPropertyName = "ClientName",
+                DataPropertyName = "DisplayClientName", // Используем маскированное имя
                 Width = 150
             });
 
@@ -175,7 +179,7 @@ namespace prototip
             {
                 Name = "PhoneNumber",
                 HeaderText = "Телефон",
-                DataPropertyName = "PhoneNumber",
+                DataPropertyName = "DisplayPhoneNumber", // Используем маскированный телефон
                 Width = 120
             });
 
@@ -228,6 +232,21 @@ namespace prototip
                 Width = 100,
                 DefaultCellStyle = new DataGridViewCellStyle() { Format = "0.##' руб.'" } // Формат с валютой
             });
+
+            // Добавляем скрытые колонки для хранения полных данных (нужны для поиска и фильтрации)
+            dataGridView.Columns.Add(new DataGridViewTextBoxColumn()
+            {
+                Name = "FullClientName",
+                DataPropertyName = "ClientName",
+                Visible = false
+            });
+
+            dataGridView.Columns.Add(new DataGridViewTextBoxColumn()
+            {
+                Name = "FullPhoneNumber",
+                DataPropertyName = "PhoneNumber",
+                Visible = false
+            });
         }
 
         /// <summary>
@@ -272,6 +291,107 @@ namespace prototip
             // Отдельная подписка для обработки изменения дат
             dtpStartDate.ValueChanged += OnDateChanged;
             dtpEndDate.ValueChanged += OnDateChanged;
+
+            // Подписка на форматирование ячеек для применения маскировки
+            dataGridView.CellFormatting += DataGridView_CellFormatting;
+        }
+
+        /// <summary>
+        /// Обработчик форматирования ячеек для дополнительной маскировки
+        /// </summary>
+        private void DataGridView_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (!maskPersonalData) return;
+
+            // Дополнительная маскировка на уровне отображения ячеек
+            if (dataGridView.Columns[e.ColumnIndex].Name == "ClientName" && e.Value != null)
+            {
+                string fullName = e.Value.ToString();
+                e.Value = MaskClientName(fullName);
+                e.FormattingApplied = true;
+            }
+            else if (dataGridView.Columns[e.ColumnIndex].Name == "PhoneNumber" && e.Value != null)
+            {
+                string phone = e.Value.ToString();
+                e.Value = MaskPhoneNumber(phone);
+                e.FormattingApplied = true;
+            }
+            else if (dataGridView.Columns[e.ColumnIndex].Name == "ManagerName" && e.Value != null)
+            {
+                string manager = e.Value.ToString();
+                e.Value = MaskManagerName(manager);
+                e.FormattingApplied = true;
+            }
+        }
+
+        /// <summary>
+        /// Маскирование имени клиента (оставляет фамилию и инициалы)
+        /// </summary>
+        private string MaskClientName(string fullName)
+        {
+            if (string.IsNullOrEmpty(fullName)) return "";
+
+            string[] parts = fullName.Split(' ');
+            if (parts.Length >= 1)
+            {
+                string result = parts[0]; // Фамилия полностью
+
+                if (parts.Length >= 2 && !string.IsNullOrEmpty(parts[1]))
+                {
+                    result += " " + parts[1].Substring(0, 1) + "."; // Инициал имени
+                }
+
+                if (parts.Length >= 3 && !string.IsNullOrEmpty(parts[2]))
+                {
+                    result +=" " + parts[2].Substring(0, 1) + "."; // Инициал отчества
+                }
+
+                return result;
+            }
+
+            return fullName;
+        }
+
+        /// <summary>
+        /// Маскирование номера телефона (оставляет +7 и последние 4 цифры)
+        /// </summary>
+        private string MaskPhoneNumber(string phone)
+        {
+            if (string.IsNullOrEmpty(phone)) return "";
+
+            // Удаляем все нецифровые символы
+            string digits = new string(phone.Where(char.IsDigit).ToArray());
+
+            if (digits.Length >= 11)
+            {
+                string last4 = digits.Substring(digits.Length - 4, 4);
+                return "+7 *** **-" + last4;
+            }
+
+            return phone;
+        }
+
+        /// <summary>
+        /// Маскирование имени менеджера
+        /// </summary>
+        private string MaskManagerName(string managerName)
+        {
+            if (string.IsNullOrEmpty(managerName)) return "";
+
+            string[] parts = managerName.Split(' ');
+            if (parts.Length >= 1)
+            {
+                string result = parts[0]; // Фамилия полностью
+
+                if (parts.Length >= 2 && !string.IsNullOrEmpty(parts[1]))
+                {
+                    result += " " + parts[1].Substring(0, 1) + ".";
+                }
+
+                return result;
+            }
+
+            return managerName;
         }
 
         /// <summary>
@@ -320,6 +440,14 @@ namespace prototip
             {
                 // Получаем все заказы через репозиторий
                 var orders = orderRepository.GetAllOrders();
+
+                // Добавляем свойства для маскированного отображения
+                foreach (var order in orders)
+                {
+                    order.DisplayClientName = MaskClientName(order.ClientName);
+                    order.DisplayPhoneNumber = MaskPhoneNumber(order.PhoneNumber);
+                }
+
                 allOrders = new BindingList<Order>(orders);
 
                 // Применяем фильтры после загрузки
@@ -371,6 +499,13 @@ namespace prototip
             // Сохраняем отфильтрованный список
             filteredOrders = new BindingList<Order>(filtered.ToList());
 
+            // Обновляем маскированные данные перед отображением
+            foreach (var order in filteredOrders)
+            {
+                order.DisplayClientName = MaskClientName(order.ClientName);
+                order.DisplayPhoneNumber = MaskPhoneNumber(order.PhoneNumber);
+            }
+
             // Обновляем источник данных DataGridView
             dataGridView.DataSource = filteredOrders;
 
@@ -413,6 +548,7 @@ namespace prototip
             this.Visible = false;
 
             // Открываем форму просмотра заказа с передачей ID
+            // В форме просмотра будут показаны ПОЛНЫЕ данные клиента
             ViewingOrderAdmin detailsForm = new ViewingOrderAdmin(orderId);
             detailsForm.ShowDialog();
 
