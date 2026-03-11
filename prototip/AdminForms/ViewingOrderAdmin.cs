@@ -16,6 +16,7 @@ namespace prototip
     /// Форма для просмотра и редактирования деталей конкретного заказа
     /// Доступна для администраторов и позволяет изменять статус заказа
     /// </summary>
+    
     public partial class ViewingOrderAdmin : Form
     {
         // Идентификатор просматриваемого заказа
@@ -50,20 +51,21 @@ namespace prototip
             {
                 // SQL-запрос для получения полной информации о заказе
                 string query = @"
-            SELECT 
-                o.ID,
-                CONCAT(c.LastName, ' ', c.FirstName, ' ', c.Surname) as ClientName,
-                s.Name as QuestName,
-                s.Price,
-                o.DateOfAdmission,
-                st.Name as StatusName,
-                COALESCE(o.ParticipantsCount, 1) as ParticipantsCount,
-                COALESCE(o.TotalPrice, s.Price * COALESCE(o.ParticipantsCount, 1)) as TotalPrice
-            FROM orders o
-            LEFT JOIN clients c ON o.ClientID = c.ClientID
-            LEFT JOIN services s ON o.Article = s.Article
-            LEFT JOIN statuses st ON o.StatusID = st.StatusID
-            WHERE o.ID = @orderId";
+    SELECT 
+        o.ID,
+        CONCAT(c.LastName, ' ', c.FirstName, ' ', c.Surname) as ClientName,
+        c.PhoneNumber as ClientPhone,  
+        s.Name as QuestName,
+        s.Price,
+        o.DateOfAdmission,
+        st.Name as StatusName,
+        COALESCE(o.ParticipantsCount, 1) as ParticipantsCount,
+        COALESCE(o.TotalPrice, s.Price * COALESCE(o.ParticipantsCount, 1)) as TotalPrice
+    FROM orders o
+    LEFT JOIN clients c ON o.ClientID = c.ClientID
+    LEFT JOIN services s ON o.Article = s.Article
+    LEFT JOIN statuses st ON o.StatusID = st.StatusID
+    WHERE o.ID = @orderId";
 
                 // Подключение к базе данных
                 using (MySqlConnection conn = new MySqlConnection(DatabaseConfig.ConnectionString))
@@ -80,6 +82,17 @@ namespace prototip
                             // Безопасное преобразование данных с помощью Convert
                             // Заполнение полей формы полученными данными
                             textBox2.Text = Convert.ToString(reader["ClientName"]);      // ФИО клиента
+
+                            // ИСПРАВЛЕНО: Загрузка телефона
+                            if (reader["ClientPhone"] != DBNull.Value)
+                            {
+                                textBoxPhone.Text = Convert.ToString(reader["ClientPhone"]); // Телефон клиента
+                            }
+                            else
+                            {
+                                textBoxPhone.Text = "Не указан";
+                            }
+
                             textBox4.Text = Convert.ToString(reader["QuestName"]);        // Название квеста
                             dateTimePicker1.Value = Convert.ToDateTime(reader["DateOfAdmission"]); // Дата начала
 

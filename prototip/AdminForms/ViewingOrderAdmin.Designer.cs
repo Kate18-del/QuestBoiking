@@ -43,12 +43,13 @@
             this.textBox2 = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.textBox4 = new System.Windows.Forms.TextBox();
             this.comboBox2 = new System.Windows.Forms.ComboBox();
             this.label10 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
-            this.pictureBox1 = new System.Windows.Forms.PictureBox();
+            this.textBoxPhone = new System.Windows.Forms.TextBox();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
@@ -67,7 +68,7 @@
             // 
             this.label8.AutoSize = true;
             this.label8.Font = new System.Drawing.Font("Comic Sans MS", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.label8.Location = new System.Drawing.Point(6, 162);
+            this.label8.Location = new System.Drawing.Point(6, 194);
             this.label8.Name = "label8";
             this.label8.Size = new System.Drawing.Size(105, 20);
             this.label8.TabIndex = 68;
@@ -198,6 +199,7 @@
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.textBoxPhone);
             this.groupBox1.Controls.Add(this.pictureBox1);
             this.groupBox1.Controls.Add(this.textBox4);
             this.groupBox1.Controls.Add(this.comboBox2);
@@ -220,6 +222,16 @@
             this.groupBox1.Size = new System.Drawing.Size(891, 335);
             this.groupBox1.TabIndex = 50;
             this.groupBox1.TabStop = false;
+            // 
+            // pictureBox1
+            // 
+            this.pictureBox1.Image = global::prototip.Properties.Resources.logo;
+            this.pictureBox1.Location = new System.Drawing.Point(6, 9);
+            this.pictureBox1.Name = "pictureBox1";
+            this.pictureBox1.Size = new System.Drawing.Size(78, 71);
+            this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this.pictureBox1.TabIndex = 51;
+            this.pictureBox1.TabStop = false;
             // 
             // textBox4
             // 
@@ -274,15 +286,16 @@
             this.label2.TabIndex = 48;
             this.label2.Text = "менеджер Иванов.И.А.";
             // 
-            // pictureBox1
+            // textBoxPhone
             // 
-            this.pictureBox1.Image = global::prototip.Properties.Resources.logo;
-            this.pictureBox1.Location = new System.Drawing.Point(6, 9);
-            this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(78, 71);
-            this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
-            this.pictureBox1.TabIndex = 51;
-            this.pictureBox1.TabStop = false;
+            this.textBoxPhone.Font = new System.Drawing.Font("Comic Sans MS", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.textBoxPhone.ForeColor = System.Drawing.SystemColors.MenuText;
+            this.textBoxPhone.Location = new System.Drawing.Point(6, 165);
+            this.textBoxPhone.Name = "textBoxPhone";
+            this.textBoxPhone.ReadOnly = true;
+            this.textBoxPhone.Size = new System.Drawing.Size(240, 26);
+            this.textBoxPhone.TabIndex = 72;
+            this.textBoxPhone.Text = "Телефон";
             // 
             // ViewingOrderAdmin
             // 
@@ -330,5 +343,6 @@
         private System.Windows.Forms.ComboBox comboBox2;
         private System.Windows.Forms.TextBox textBox4;
         private System.Windows.Forms.PictureBox pictureBox1;
+        private System.Windows.Forms.TextBox textBoxPhone;
     }
 }
