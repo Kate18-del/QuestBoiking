@@ -1,6 +1,7 @@
 ﻿using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -133,6 +134,62 @@ namespace prototip
             }
 
             return statuses;
+        }
+
+        /// <summary>
+        /// Получает минимальную дату заказа из базы данных
+        /// </summary>
+        public DateTime GetMinOrderDate()
+        {
+            try
+            {
+                using (var connection = new MySqlConnection(DatabaseConfig.ConnectionString))
+                {
+                    connection.Open();
+                    string query = "SELECT MIN(DateOfAdmission) FROM orders";
+                    using (var command = new MySqlCommand(query, connection))
+                    {
+                        var result = command.ExecuteScalar();
+                        if (result != DBNull.Value)
+                        {
+                            return Convert.ToDateTime(result);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error getting min date: {ex.Message}");
+            }
+            return DateTime.MinValue;
+        }
+
+        /// <summary>
+        /// Получает максимальную дату заказа из базы данных
+        /// </summary>
+        public DateTime GetMaxOrderDate()
+        {
+            try
+            {
+                using (var connection = new MySqlConnection(DatabaseConfig.ConnectionString))
+                {
+                    connection.Open();
+                    string query = "SELECT MAX(DateOfAdmission) FROM orders";
+                    using (var command = new MySqlCommand(query, connection))
+                    {
+                        var result = command.ExecuteScalar();
+                        if (result != DBNull.Value)
+                        {
+                            return Convert.ToDateTime(result);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error getting max date: {ex.Message}");
+            }
+            return DateTime.MinValue;
         }
     }
 }
