@@ -38,6 +38,7 @@ namespace prototip
             this.btnBooks = new System.Windows.Forms.Button();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.BtnSettings = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -135,12 +136,27 @@ namespace prototip
             this.panel1.Size = new System.Drawing.Size(391, 318);
             this.panel1.TabIndex = 4;
             // 
+            // BtnSettings
+            // 
+            this.BtnSettings.BackColor = System.Drawing.SystemColors.GradientInactiveCaption;
+            this.BtnSettings.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
+            this.BtnSettings.Font = new System.Drawing.Font("Comic Sans MS", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.BtnSettings.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.BtnSettings.Location = new System.Drawing.Point(3, 381);
+            this.BtnSettings.Name = "BtnSettings";
+            this.BtnSettings.Size = new System.Drawing.Size(128, 42);
+            this.BtnSettings.TabIndex = 5;
+            this.BtnSettings.Text = "Настройки";
+            this.BtnSettings.UseVisualStyleBackColor = false;
+            this.BtnSettings.Click += new System.EventHandler(this.BtnSettings_Click);
+            // 
             // MainAdmin
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 18F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Window;
             this.ClientSize = new System.Drawing.Size(401, 435);
+            this.Controls.Add(this.BtnSettings);
             this.Controls.Add(this.btnBooks);
             this.Controls.Add(this.btnExit);
             this.Controls.Add(this.btnOrders);
@@ -174,5 +190,6 @@ namespace prototip
         private System.Windows.Forms.Button btnExit;
         private System.Windows.Forms.Button btnBooks;
         private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.Button BtnSettings;
     }
 }

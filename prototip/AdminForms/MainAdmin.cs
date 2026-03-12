@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Configuration;
 using System.Data;
 using System.Drawing;
 using System.Linq;
@@ -17,6 +18,7 @@ namespace prototip
     /// </summary>
     public partial class MainAdmin : Form
     {
+        private InactivityTracker inactivityTracker;
         /// <summary>
         /// Конструктор формы главного меню администратора
         /// </summary>
@@ -25,6 +27,9 @@ namespace prototip
             InitializeComponent();
             // Отображаем информацию о текущем пользователе при загрузке формы
             DisplayCurrentUser();
+
+            InitializeInactivityTracker();
+;
         }
 
         /// <summary>
@@ -47,6 +52,54 @@ namespace prototip
                 label2.Text = $"администратор {shortName}";
             }
         }
+
+        private void InitializeInactivityTracker()
+        {
+            inactivityTracker = new InactivityTracker(this);
+            inactivityTracker.InactivityDetected += InactivityTracker_InactivityDetected;
+            inactivityTracker.Start();
+        }
+
+
+        private void InactivityTracker_InactivityDetected(object sender, EventArgs e)
+        {
+            // Останавливаем трекер
+            inactivityTracker.Stop();
+
+            // Запоминаем текущую форму
+            Autorisation.LastActiveForm = this;
+
+            // Скрываем текущую форму
+            this.Visible = false;
+
+            // Создаем форму авторизации
+            Autorisation authForm = new Autorisation();
+
+            // Подписываемся на событие успешного входа
+            authForm.LoginSucceeded += (s, args) =>
+            {
+                // Показываем форму заново
+                this.Visible = true;
+
+                // Перезапускаем трекер
+                inactivityTracker.Start();
+            };
+
+            authForm.ShowDialog();
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            inactivityTracker?.Stop();
+            base.OnFormClosing(e);
+        }
+
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+            inactivityTracker?.Start();
+        }
+
 
         /// <summary>
         /// Обработчик кнопки выхода из системы
@@ -114,6 +167,37 @@ namespace prototip
 
             // После закрытия формы справочников возвращаемся в главное меню
             this.Visible = true;
+        }
+
+        private void BtnSettings_Click(object sender, EventArgs e)
+        {
+            using (SettingsForm settingsForm = new SettingsForm())
+            {
+                // Останавливаем трекер на время настроек
+                inactivityTracker?.Stop();
+
+                if (settingsForm.ShowDialog() == DialogResult.OK)
+                {
+                    // Если настройки сохранены, обновляем трекер
+                    string timeout = ConfigurationManager.AppSettings["InactivityTimeoutSeconds"];
+                    if (!string.IsNullOrEmpty(timeout) && int.TryParse(timeout, out int seconds))
+                    {
+                        inactivityTracker?.UpdateTimeout(seconds);
+                    }
+
+                    string enabled = ConfigurationManager.AppSettings["EnableAutoLock"];
+                    if (!string.IsNullOrEmpty(enabled) && bool.TryParse(enabled, out bool isEnabled))
+                    {
+                        inactivityTracker?.SetEnabled(isEnabled);
+                    }
+
+                    MessageBox.Show("Настройки применены!", "Успех",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+
+                // Возобновляем трекер
+                inactivityTracker?.Start();
+            }
         }
     }
 }

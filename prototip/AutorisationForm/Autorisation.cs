@@ -18,6 +18,11 @@ namespace prototip
     /// </summary>
     public partial class Autorisation : Form
     {
+        // Статическое свойство для отслеживания последней активной формы
+        public static Form LastActiveForm { get; set; }
+
+        // Событие успешной авторизации
+        public event EventHandler LoginSucceeded;
         /// <summary>
         /// Конструктор формы авторизации
         /// </summary>
@@ -91,6 +96,8 @@ namespace prototip
                             CurrentUser.Role = roleId;
 
                             MessageBox.Show($"Добро пожаловать, {fio}!", "Успешный вход");
+                            // Вызываем событие успешного входа
+                            LoginSucceeded?.Invoke(this, EventArgs.Empty);
                             this.Hide();
 
                             if (roleId == 1)
