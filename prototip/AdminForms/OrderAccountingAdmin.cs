@@ -20,6 +20,7 @@ namespace prototip
         // Коллекции для хранения заказов с поддержкой привязки к элементам управления
         private BindingList<Order> allOrders;        // Все заказы из базы данных
         private BindingList<Order> filteredOrders;    // Отфильтрованные заказы
+        private BindingList<Order> pagedOrders;       // Заказы для текущей страницы
 
         // Репозиторий для работы с данными заказов
         private OrderRepository orderRepository;
@@ -28,8 +29,31 @@ namespace prototip
         private DateTimePicker dtpStartDate;  // Начальная дата периода
         private DateTimePicker dtpEndDate;     // Конечная дата периода
 
+        // Элементы управления для пагинации (будут добавлены программно)
+        private Panel pnlPagination;
+        private Label lblPageInfo;
+        private Button btnFirstPage;
+        private Button btnPrevPage;
+        private Button btnNextPage;
+        private Button btnLastPage;
+        private ComboBox cmbPageSelector;
+        private ToolTip toolTip;
+
+        // Параметры пагинации
+        private int currentPage = 1;
+        private int pageSize = 20;
+        private int totalPages = 1;
+        private int totalRecords = 0;
+        private int displayedRecords = 0;
+
         // Флаг для маскировки персональных данных
         private bool maskPersonalData = true;
+
+        // Цвета для условного форматирования
+        private Color urgentColor = Color.LightCoral;      // Для срочных заказов (сегодня)
+        private Color tomorrowColor = Color.LightYellow;    // Для заказов на завтра
+        private Color cancelledColor = Color.LightGray;     // Для отмененных заказов
+        private Color normalColor = Color.White;            // Для обычных заказов
 
         /// <summary>
         /// Конструктор формы учета заказов
@@ -39,31 +63,18 @@ namespace prototip
             InitializeComponent();
             // Инициализация репозитория для работы с БД
             orderRepository = new OrderRepository();
-            // Настройка элементов формы
-            InitializeForm();
+            // Настройка дополнительных элементов формы
+            InitializeAdditionalControls();
             // Отображение информации о текущем пользователе
             DisplayCurrentUser();
+            // Загрузка данных из базы
+            LoadOrders();
         }
 
         /// <summary>
-        /// Отображает информацию о текущем администраторе
-        /// Формирует краткое ФИО в формате "Фамилия И.О."
+        /// Инициализация дополнительных элементов управления
         /// </summary>
-        private void DisplayCurrentUser()
-        {
-            if (CurrentUser.FIO != null)
-            {
-                string[] fioParts = CurrentUser.FIO.Split(' ');
-                string shortName = $"{fioParts[0]} {fioParts[1].Substring(0, 1)}.{fioParts[2].Substring(0, 1)}.";
-                label2.Text = $"администратор {shortName}";
-            }
-        }
-
-        /// <summary>
-        /// Инициализация всех элементов формы
-        /// Вызывается при создании формы
-        /// </summary>
-        private void InitializeForm()
+        private void InitializeAdditionalControls()
         {
             // Создание фильтров по дате
             CreateDateFilters();
@@ -74,11 +85,24 @@ namespace prototip
             // Настройка выпадающего списка статусов
             ConfigureStatusComboBox();
 
-            // Загрузка данных из базы
-            LoadOrders();
+            // Создание элементов пагинации
+            CreatePaginationControls();
+
+            // Создание подсказки для цветового форматирования
+            CreateColorToolTip();
 
             // Подписка на события для автоматического обновления фильтров
             SubscribeToEvents();
+        }
+
+        /// <summary>
+        /// Создание подсказки для описания цветов
+        /// </summary>
+        private void CreateColorToolTip()
+        {
+            toolTip = new ToolTip();
+            toolTip.SetToolTip(lblRecordCount, "Красный - срочные заказы (сегодня)\nЖелтый - заказы на завтра\nСерый - отмененные заказы");
+            toolTip.SetToolTip(dataGridView, "Красный - срочные заказы (сегодня)\nЖелтый - заказы на завтра\nСерый - отмененные заказы");
         }
 
         /// <summary>
@@ -91,45 +115,45 @@ namespace prototip
             Label lblStartDate = new Label
             {
                 Text = "С:",
-                Location = new Point(650, 91),
+                Location = new Point(660, 91),
                 Size = new Size(20, 20),
-                Font = new Font("Comic Sans MS", 9)
+                Font = new Font("Comic Sans MS", 9),
+                BackColor = Color.Transparent
             };
 
             // Метка для поля "По" (конец периода)
             Label lblEndDate = new Label
             {
                 Text = "По:",
-                Location = new Point(780, 91),
+                Location = new Point(790, 91),
                 Size = new Size(30, 20),
-                Font = new Font("Comic Sans MS", 9)
+                Font = new Font("Comic Sans MS", 9),
+                BackColor = Color.Transparent
             };
 
             // Поле выбора начальной даты
             dtpStartDate = new DateTimePicker
             {
-                Location = new Point(670, 91),
+                Location = new Point(680, 91),
                 Size = new Size(100, 20),
                 Format = DateTimePickerFormat.Short,
-                Value = new DateTime(2025, 1, 1), // Начало периода - 1 января 2025
-                Tag = DateTime.Today,
-                MinDate = new DateTime(2025, 1, 1), // Минимально допустимая дата
-                MaxDate = DateTime.Today // Максимальная дата - сегодня
+                Value = new DateTime(2025, 1, 1),
+                MinDate = new DateTime(2025, 1, 1),
+                MaxDate = DateTime.Today
             };
 
             // Поле выбора конечной даты
             dtpEndDate = new DateTimePicker
             {
-                Location = new Point(810, 91),
+                Location = new Point(820, 91),
                 Size = new Size(100, 20),
                 Format = DateTimePickerFormat.Short,
-                Value = DateTime.Today, // Конец периода - сегодня
-                Tag = DateTime.Today,
+                Value = DateTime.Today,
                 MinDate = new DateTime(2025, 1, 1),
                 MaxDate = DateTime.Today
             };
 
-            // Добавление элементов на форму
+            // Добавление элементов на форму в groupBox1
             groupBox1.Controls.Add(lblStartDate);
             groupBox1.Controls.Add(dtpStartDate);
             groupBox1.Controls.Add(lblEndDate);
@@ -140,8 +164,120 @@ namespace prototip
         }
 
         /// <summary>
+        /// Создание элементов управления для пагинации
+        /// </summary>
+        private void CreatePaginationControls()
+        {
+            // Панель для элементов пагинации
+            pnlPagination = new Panel
+            {
+                Location = new Point(12, 480),
+                Size = new Size(1100, 40),
+                BackColor = Color.Transparent
+            };
+
+            // Кнопка "Первая страница"
+            btnFirstPage = new Button
+            {
+                Location = new Point(350, 8),
+                Size = new Size(40, 25),
+                Text = "⏮",
+                Font = new Font("Arial", 10),
+                BackColor = SystemColors.GradientInactiveCaption,
+                FlatStyle = FlatStyle.Popup,
+                Enabled = false
+            };
+            btnFirstPage.Click += BtnFirstPage_Click;
+
+            // Кнопка "Предыдущая страница"
+            btnPrevPage = new Button
+            {
+                Location = new Point(395, 8),
+                Size = new Size(40, 25),
+                Text = "◀",
+                Font = new Font("Arial", 10),
+                BackColor = SystemColors.GradientInactiveCaption,
+                FlatStyle = FlatStyle.Popup,
+                Enabled = false
+            };
+            btnPrevPage.Click += BtnPrevPage_Click;
+
+            // Метка с информацией о странице
+            lblPageInfo = new Label
+            {
+                Location = new Point(440, 10),
+                Size = new Size(150, 20),
+                Font = new Font("Comic Sans MS", 9),
+                Text = "Страница 1 из 1",
+                TextAlign = ContentAlignment.MiddleCenter,
+                BackColor = Color.White,
+                BorderStyle = BorderStyle.FixedSingle
+            };
+
+            // Кнопка "Следующая страница"
+            btnNextPage = new Button
+            {
+                Location = new Point(595, 8),
+                Size = new Size(40, 25),
+                Text = "▶",
+                Font = new Font("Arial", 10),
+                BackColor = SystemColors.GradientInactiveCaption,
+                FlatStyle = FlatStyle.Popup,
+                Enabled = false
+            };
+            btnNextPage.Click += BtnNextPage_Click;
+
+            // Кнопка "Последняя страница"
+            btnLastPage = new Button
+            {
+                Location = new Point(640, 8),
+                Size = new Size(40, 25),
+                Text = "⏭",
+                Font = new Font("Arial", 10),
+                BackColor = SystemColors.GradientInactiveCaption,
+                FlatStyle = FlatStyle.Popup,
+                Enabled = false
+            };
+            btnLastPage.Click += BtnLastPage_Click;
+
+            // Метка для выбора страницы
+            Label lblGoToPage = new Label
+            {
+                Location = new Point(690, 10),
+                Size = new Size(120, 20),
+                Font = new Font("Comic Sans MS", 9),
+                Text = "Перейти к странице:",
+                TextAlign = ContentAlignment.MiddleRight
+            };
+
+            // Выпадающий список для выбора страницы
+            cmbPageSelector = new ComboBox
+            {
+                Location = new Point(815, 8),
+                Size = new Size(60, 25),
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Font = new Font("Comic Sans MS", 9),
+                BackColor = Color.White
+            };
+            cmbPageSelector.SelectedIndexChanged += CmbPageSelector_SelectedIndexChanged;
+
+            // Добавляем элементы на панель
+            pnlPagination.Controls.AddRange(new Control[] {
+                btnFirstPage,
+                btnPrevPage,
+                lblPageInfo,
+                btnNextPage,
+                btnLastPage,
+                lblGoToPage,
+                cmbPageSelector
+            });
+
+            // Добавляем панель на форму
+            this.Controls.Add(pnlPagination);
+        }
+
+        /// <summary>
         /// Настройка столбцов DataGridView для отображения информации о заказах
-        /// с маскированием персональных данных
         /// </summary>
         private void ConfigureDataGridView()
         {
@@ -151,9 +287,16 @@ namespace prototip
             // Настройка режимов выделения и редактирования
             dataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dataGridView.ReadOnly = true;
+            dataGridView.AllowUserToAddRows = false;
+            dataGridView.AllowUserToDeleteRows = false;
+            dataGridView.RowHeadersVisible = false;
 
             // Установка шрифта
-            this.dataGridView.DefaultCellStyle.Font = new Font("Comic Sans MS", 9);
+            dataGridView.DefaultCellStyle.Font = new Font("Comic Sans MS", 9);
+            dataGridView.ColumnHeadersDefaultCellStyle.Font = new Font("Comic Sans MS", 9, FontStyle.Bold);
+
+            // Включаем отрисовку строк с учетом статуса
+            dataGridView.RowPrePaint += DataGridView_RowPrePaint;
 
             // Очистка существующих столбцов
             dataGridView.Columns.Clear();
@@ -163,7 +306,7 @@ namespace prototip
             {
                 Name = "ID",
                 HeaderText = "№ Заказа",
-                DataPropertyName = "ID",      // Привязка к свойству Order.ID
+                DataPropertyName = "ID",
                 Width = 80
             });
 
@@ -171,7 +314,7 @@ namespace prototip
             {
                 Name = "ClientName",
                 HeaderText = "Клиент",
-                DataPropertyName = "DisplayClientName", // Используем маскированное имя
+                DataPropertyName = "DisplayClientName",
                 Width = 150
             });
 
@@ -179,7 +322,7 @@ namespace prototip
             {
                 Name = "PhoneNumber",
                 HeaderText = "Телефон",
-                DataPropertyName = "DisplayPhoneNumber", // Используем маскированный телефон
+                DataPropertyName = "DisplayPhoneNumber",
                 Width = 120
             });
 
@@ -196,8 +339,8 @@ namespace prototip
                 Name = "DateOfAdmission",
                 HeaderText = "Дата начала",
                 DataPropertyName = "DateOfAdmission",
-                Width = 120,
-                DefaultCellStyle = new DataGridViewCellStyle() { Format = "dd.MM.yyyy HH:mm" } // Формат даты и времени
+                Width = 130,
+                DefaultCellStyle = new DataGridViewCellStyle() { Format = "dd.MM.yyyy HH:mm" }
             });
 
             dataGridView.Columns.Add(new DataGridViewTextBoxColumn()
@@ -230,10 +373,10 @@ namespace prototip
                 HeaderText = "Стоимость",
                 DataPropertyName = "TotalPrice",
                 Width = 100,
-                DefaultCellStyle = new DataGridViewCellStyle() { Format = "0.##' руб.'" } // Формат с валютой
+                DefaultCellStyle = new DataGridViewCellStyle() { Format = "0.##' руб.'" }
             });
 
-            // Добавляем скрытые колонки для хранения полных данных (нужны для поиска и фильтрации)
+            // Добавляем скрытые колонки для хранения полных данных
             dataGridView.Columns.Add(new DataGridViewTextBoxColumn()
             {
                 Name = "FullClientName",
@@ -250,17 +393,46 @@ namespace prototip
         }
 
         /// <summary>
-        /// Настройка выпадающего списка статусов заказов
-        /// Загружает статусы из базы данных
+        /// Обработчик предварительной отрисовки строк для условного форматирования
+        /// </summary>
+        private void DataGridView_RowPrePaint(object sender, DataGridViewRowPrePaintEventArgs e)
+        {
+            if (pagedOrders == null || e.RowIndex >= pagedOrders.Count) return;
+
+            var order = pagedOrders[e.RowIndex];
+
+            // Определяем цвет строки на основе статуса и даты
+            if (order.StatusName == "Отменен")
+            {
+                dataGridView.Rows[e.RowIndex].DefaultCellStyle.BackColor = cancelledColor;
+            }
+            else if (order.DateOfAdmission.Date == DateTime.Today)
+            {
+                // Красный цвет для заказов на сегодня (срочные)
+                dataGridView.Rows[e.RowIndex].DefaultCellStyle.BackColor = urgentColor;
+            }
+            else if (order.DateOfAdmission.Date == DateTime.Today.AddDays(1))
+            {
+                // Желтый цвет для заказов на завтра
+                dataGridView.Rows[e.RowIndex].DefaultCellStyle.BackColor = tomorrowColor;
+            }
+            else
+            {
+                // Белый цвет для остальных заказов
+                dataGridView.Rows[e.RowIndex].DefaultCellStyle.BackColor = normalColor;
+            }
+        }
+
+        /// <summary>
+        /// Настройка выпадающего списка статусов
         /// </summary>
         private void ConfigureStatusComboBox()
         {
             cmbStatus.Items.Clear();
-            cmbStatus.Items.Add("Все статусы"); // Добавляем опцию для отображения всех статусов
+            cmbStatus.Items.Add("Все статусы");
 
             try
             {
-                // Загрузка списка статусов из репозитория
                 var statuses = orderRepository.GetAllStatuses();
                 foreach (var status in statuses)
                 {
@@ -273,37 +445,263 @@ namespace prototip
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
 
-            // Устанавливаем значение по умолчанию - "Все статусы"
             cmbStatus.SelectedIndex = 0;
         }
 
         /// <summary>
-        /// Подписка на события элементов управления для автоматического обновления фильтров
+        /// Отображает информацию о текущем администраторе
+        /// </summary>
+        private void DisplayCurrentUser()
+        {
+            if (CurrentUser.FIO != null)
+            {
+                string[] fioParts = CurrentUser.FIO.Split(' ');
+                string shortName = $"{fioParts[0]} {fioParts[1].Substring(0, 1)}.{fioParts[2].Substring(0, 1)}.";
+                label2.Text = $"администратор {shortName}";
+            }
+        }
+
+        /// <summary>
+        /// Подписка на события элементов управления
         /// </summary>
         private void SubscribeToEvents()
         {
-            // При изменении любого фильтра автоматически применяем фильтрацию
             txtSearch.TextChanged += OnFilterChanged;
             cmbStatus.SelectedIndexChanged += OnFilterChanged;
             dtpStartDate.ValueChanged += OnFilterChanged;
             dtpEndDate.ValueChanged += OnFilterChanged;
 
-            // Отдельная подписка для обработки изменения дат
             dtpStartDate.ValueChanged += OnDateChanged;
             dtpEndDate.ValueChanged += OnDateChanged;
 
-            // Подписка на форматирование ячеек для применения маскировки
             dataGridView.CellFormatting += DataGridView_CellFormatting;
         }
 
         /// <summary>
-        /// Обработчик форматирования ячеек для дополнительной маскировки
+        /// Обработчик изменения дат
         /// </summary>
+        private void OnDateChanged(object sender, EventArgs e)
+        {
+            if (sender == dtpStartDate)
+            {
+                dtpEndDate.MinDate = dtpStartDate.Value;
+                if (dtpEndDate.Value < dtpStartDate.Value)
+                {
+                    dtpEndDate.Value = dtpStartDate.Value;
+                }
+                OnFilterChanged(sender, e);
+            }
+        }
+
+        /// <summary>
+        /// Обработчик изменения фильтра
+        /// </summary>
+        private void OnFilterChanged(object sender, EventArgs e)
+        {
+            ApplyFilters();
+        }
+
+        /// <summary>
+        /// Загрузка всех заказов
+        /// </summary>
+        private void LoadOrders()
+        {
+            try
+            {
+                var orders = orderRepository.GetAllOrders();
+
+                foreach (var order in orders)
+                {
+                    order.DisplayClientName = MaskClientName(order.ClientName);
+                    order.DisplayPhoneNumber = MaskPhoneNumber(order.PhoneNumber);
+                }
+
+                allOrders = new BindingList<Order>(orders);
+                totalRecords = allOrders.Count;
+
+                ApplyFilters();
+
+                if (allOrders.Count == 0)
+                {
+                    MessageBox.Show("В базе данных нет заказов", "Информация",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка загрузки данных: {ex.Message}", "Ошибка",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                allOrders = new BindingList<Order>();
+            }
+        }
+
+        /// <summary>
+        /// Применение фильтров
+        /// </summary>
+        private void ApplyFilters()
+        {
+            if (allOrders == null || allOrders.Count == 0)
+            {
+                UpdatePagination();
+                return;
+            }
+
+            IEnumerable<Order> filtered = allOrders;
+
+            // Фильтрация по дате
+            DateTime startDate = dtpStartDate.Value.Date;
+            DateTime endDate = dtpEndDate.Value.Date.AddDays(1).AddSeconds(-1);
+            filtered = filtered.Where(o => o.DateOfAdmission >= startDate && o.DateOfAdmission <= endDate);
+
+            // Фильтрация по статусу
+            if (cmbStatus.SelectedIndex > 0)
+            {
+                string selectedStatus = cmbStatus.SelectedItem.ToString();
+                filtered = filtered.Where(o => o.StatusName == selectedStatus);
+            }
+
+            // Фильтрация по номеру заказа
+            if (!string.IsNullOrWhiteSpace(txtSearch.Text))
+            {
+                string searchText = txtSearch.Text.Trim();
+                filtered = filtered.Where(o => o.ID.ToString().StartsWith(searchText));
+            }
+
+            filteredOrders = new BindingList<Order>(filtered.ToList());
+            displayedRecords = filteredOrders.Count;
+
+            foreach (var order in filteredOrders)
+            {
+                order.DisplayClientName = MaskClientName(order.ClientName);
+                order.DisplayPhoneNumber = MaskPhoneNumber(order.PhoneNumber);
+            }
+
+            // Сброс на первую страницу при изменении фильтра
+            currentPage = 1;
+            UpdatePagination();
+            DisplayCurrentPage();
+        }
+
+        /// <summary>
+        /// Обновление информации о пагинации
+        /// </summary>
+        private void UpdatePagination()
+        {
+            totalPages = (int)Math.Ceiling((double)displayedRecords / pageSize);
+            if (totalPages == 0) totalPages = 1;
+
+            // Обновляем информацию о записях
+            lblRecordCount.Text = $"Записей: {displayedRecords} из {totalRecords}";
+
+            // Обновляем информацию о странице
+            lblPageInfo.Text = $"Страница {currentPage} из {totalPages}";
+
+            // Обновляем выпадающий список страниц
+            cmbPageSelector.Items.Clear();
+            for (int i = 1; i <= totalPages; i++)
+            {
+                cmbPageSelector.Items.Add(i.ToString());
+            }
+
+            if (cmbPageSelector.Items.Count > 0)
+            {
+                cmbPageSelector.SelectedIndex = currentPage - 1;
+            }
+
+            UpdateNavigationButtons();
+        }
+
+        /// <summary>
+        /// Обновление состояния кнопок навигации
+        /// </summary>
+        private void UpdateNavigationButtons()
+        {
+            btnFirstPage.Enabled = currentPage > 1 && displayedRecords > 0;
+            btnPrevPage.Enabled = currentPage > 1 && displayedRecords > 0;
+            btnNextPage.Enabled = currentPage < totalPages && displayedRecords > 0;
+            btnLastPage.Enabled = currentPage < totalPages && displayedRecords > 0;
+        }
+
+        /// <summary>
+        /// Отображение текущей страницы
+        /// </summary>
+        private void DisplayCurrentPage()
+        {
+            if (filteredOrders == null || filteredOrders.Count == 0)
+            {
+                pagedOrders = new BindingList<Order>();
+                dataGridView.DataSource = null;
+                UpdatePagination();
+                return;
+            }
+
+            var paged = filteredOrders
+                .Skip((currentPage - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            pagedOrders = new BindingList<Order>(paged);
+            dataGridView.DataSource = pagedOrders;
+        }
+
+        #region Навигация по страницам
+
+        private void BtnFirstPage_Click(object sender, EventArgs e)
+        {
+            currentPage = 1;
+            DisplayCurrentPage();
+            UpdatePagination();
+        }
+
+        private void BtnPrevPage_Click(object sender, EventArgs e)
+        {
+            if (currentPage > 1)
+            {
+                currentPage--;
+                DisplayCurrentPage();
+                UpdatePagination();
+            }
+        }
+
+        private void BtnNextPage_Click(object sender, EventArgs e)
+        {
+            if (currentPage < totalPages)
+            {
+                currentPage++;
+                DisplayCurrentPage();
+                UpdatePagination();
+            }
+        }
+
+        private void BtnLastPage_Click(object sender, EventArgs e)
+        {
+            currentPage = totalPages;
+            DisplayCurrentPage();
+            UpdatePagination();
+        }
+
+        private void CmbPageSelector_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (cmbPageSelector.SelectedItem != null && !cmbPageSelector.IsHandleCreated)
+            {
+                int selectedPage = int.Parse(cmbPageSelector.SelectedItem.ToString());
+                if (selectedPage != currentPage)
+                {
+                    currentPage = selectedPage;
+                    DisplayCurrentPage();
+                    UpdatePagination();
+                }
+            }
+        }
+
+        #endregion
+
+        #region Маскирование данных
+
         private void DataGridView_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
             if (!maskPersonalData) return;
 
-            // Дополнительная маскировка на уровне отображения ячеек
             if (dataGridView.Columns[e.ColumnIndex].Name == "ClientName" && e.Value != null)
             {
                 string fullName = e.Value.ToString();
@@ -324,9 +722,6 @@ namespace prototip
             }
         }
 
-        /// <summary>
-        /// Маскирование имени клиента (оставляет фамилию и инициалы)
-        /// </summary>
         private string MaskClientName(string fullName)
         {
             if (string.IsNullOrEmpty(fullName)) return "";
@@ -334,16 +729,16 @@ namespace prototip
             string[] parts = fullName.Split(' ');
             if (parts.Length >= 1)
             {
-                string result = parts[0]; // Фамилия полностью
+                string result = parts[0];
 
                 if (parts.Length >= 2 && !string.IsNullOrEmpty(parts[1]))
                 {
-                    result += " " + parts[1].Substring(0, 1) + "."; // Инициал имени
+                    result += " " + parts[1].Substring(0, 1) + ".";
                 }
 
                 if (parts.Length >= 3 && !string.IsNullOrEmpty(parts[2]))
                 {
-                    result +=" " + parts[2].Substring(0, 1) + "."; // Инициал отчества
+                    result += " " + parts[2].Substring(0, 1) + ".";
                 }
 
                 return result;
@@ -352,14 +747,10 @@ namespace prototip
             return fullName;
         }
 
-        /// <summary>
-        /// Маскирование номера телефона (оставляет +7 и последние 4 цифры)
-        /// </summary>
         private string MaskPhoneNumber(string phone)
         {
             if (string.IsNullOrEmpty(phone)) return "";
 
-            // Удаляем все нецифровые символы
             string digits = new string(phone.Where(char.IsDigit).ToArray());
 
             if (digits.Length >= 11)
@@ -371,9 +762,6 @@ namespace prototip
             return phone;
         }
 
-        /// <summary>
-        /// Маскирование имени менеджера
-        /// </summary>
         private string MaskManagerName(string managerName)
         {
             if (string.IsNullOrEmpty(managerName)) return "";
@@ -381,7 +769,7 @@ namespace prototip
             string[] parts = managerName.Split(' ');
             if (parts.Length >= 1)
             {
-                string result = parts[0]; // Фамилия полностью
+                string result = parts[0];
 
                 if (parts.Length >= 2 && !string.IsNullOrEmpty(parts[1]))
                 {
@@ -394,136 +782,10 @@ namespace prototip
             return managerName;
         }
 
-        /// <summary>
-        /// Обработчик изменения дат
-        /// Синхронизирует минимальную дату окончания с выбранной датой начала
-        /// </summary>
-        private void OnDateChanged(object sender, EventArgs e)
-        {
-            if (sender == dtpStartDate)
-            {
-                // При изменении даты начала:
-                // 1. Обновляем минимальную дату окончания
-                dtpEndDate.MinDate = dtpStartDate.Value;
+        #endregion
 
-                // 2. Если текущая дата окончания меньше новой даты начала,
-                //    корректируем дату окончания
-                if (dtpEndDate.Value < dtpStartDate.Value)
-                {
-                    dtpEndDate.Value = dtpStartDate.Value;
-                }
+        #region Обработчики кнопок
 
-                // 3. Обновляем фильтр
-                OnFilterChanged(sender, e);
-            }
-            else if (sender == dtpEndDate)
-            {
-                // При изменении даты окончания просто обновляем фильтр
-                OnFilterChanged(sender, e);
-            }
-        }
-
-        /// <summary>
-        /// Обработчик изменения любого фильтра
-        /// </summary>
-        private void OnFilterChanged(object sender, EventArgs e)
-        {
-            ApplyFilters();
-        }
-
-        /// <summary>
-        /// Загрузка всех заказов из базы данных
-        /// </summary>
-        private void LoadOrders()
-        {
-            try
-            {
-                // Получаем все заказы через репозиторий
-                var orders = orderRepository.GetAllOrders();
-
-                // Добавляем свойства для маскированного отображения
-                foreach (var order in orders)
-                {
-                    order.DisplayClientName = MaskClientName(order.ClientName);
-                    order.DisplayPhoneNumber = MaskPhoneNumber(order.PhoneNumber);
-                }
-
-                allOrders = new BindingList<Order>(orders);
-
-                // Применяем фильтры после загрузки
-                ApplyFilters();
-
-                if (allOrders.Count == 0)
-                {
-                    MessageBox.Show("В базе данных нет заказов", "Информация",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ошибка загрузки данных: {ex.Message}", "Ошибка",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-                allOrders = new BindingList<Order>();
-            }
-        }
-
-        /// <summary>
-        /// Применение всех активных фильтров к списку заказов
-        /// </summary>
-        private void ApplyFilters()
-        {
-            if (allOrders == null || allOrders.Count == 0) return;
-
-            IEnumerable<Order> filtered = allOrders;
-
-            // 1. Фильтрация по периоду дат
-            DateTime startDate = dtpStartDate.Value.Date;
-            DateTime endDate = dtpEndDate.Value.Date.AddDays(1).AddSeconds(-1); // Включительно до конца дня
-
-            filtered = filtered.Where(o => o.DateOfAdmission >= startDate && o.DateOfAdmission <= endDate);
-
-            // 2. Фильтрация по статусу заказа
-            if (cmbStatus.SelectedIndex > 0) // Индекс 0 - "Все статусы"
-            {
-                string selectedStatus = cmbStatus.SelectedItem.ToString();
-                filtered = filtered.Where(o => o.StatusName == selectedStatus);
-            }
-
-            // 3. Фильтрация по номеру заказа (поиск по началу номера)
-            if (!string.IsNullOrWhiteSpace(txtSearch.Text))
-            {
-                string searchText = txtSearch.Text.Trim();
-                filtered = filtered.Where(o => o.ID.ToString().StartsWith(searchText));
-            }
-
-            // Сохраняем отфильтрованный список
-            filteredOrders = new BindingList<Order>(filtered.ToList());
-
-            // Обновляем маскированные данные перед отображением
-            foreach (var order in filteredOrders)
-            {
-                order.DisplayClientName = MaskClientName(order.ClientName);
-                order.DisplayPhoneNumber = MaskPhoneNumber(order.PhoneNumber);
-            }
-
-            // Обновляем источник данных DataGridView
-            dataGridView.DataSource = filteredOrders;
-
-            // Обновляем счетчик записей
-            UpdateRecordCount();
-        }
-
-        /// <summary>
-        /// Обновление счетчика количества отображаемых записей
-        /// </summary>
-        private void UpdateRecordCount()
-        {
-            lblRecordCount.Text = $"Количество записей: {filteredOrders?.Count ?? 0}";
-        }
-
-        /// <summary>
-        /// Обработчик кнопки просмотра выбранного заказа
-        /// </summary>
         private void btnViewOrder_Click(object sender, EventArgs e)
         {
             if (dataGridView.SelectedRows.Count > 0)
@@ -538,28 +800,6 @@ namespace prototip
             }
         }
 
-        /// <summary>
-        /// Открытие формы детального просмотра заказа
-        /// </summary>
-        /// <param name="orderId">Идентификатор заказа</param>
-        private void OpenOrderDetails(int orderId)
-        {
-            // Скрываем текущую форму
-            this.Visible = false;
-
-            // Открываем форму просмотра заказа с передачей ID
-            // В форме просмотра будут показаны ПОЛНЫЕ данные клиента
-            ViewingOrderAdmin detailsForm = new ViewingOrderAdmin(orderId);
-            detailsForm.ShowDialog();
-
-            // После закрытия возвращаемся и обновляем данные
-            this.Visible = true;
-            LoadOrders(); // Перезагрузка данных для отображения возможных изменений
-        }
-
-        /// <summary>
-        /// Обработчик кнопки возврата в главное меню
-        /// </summary>
         private void btnMenu_Click(object sender, EventArgs e)
         {
             this.Visible = false;
@@ -568,49 +808,40 @@ namespace prototip
             this.Visible = true;
         }
 
-        /// <summary>
-        /// Обработчик кнопки сброса всех фильтров
-        /// Возвращает фильтры к значениям по умолчанию
-        /// </summary>
         private void btnReset_Click(object sender, EventArgs e)
         {
-            // Очистка поискового запроса
             txtSearch.Text = "";
-
-            // Сброс дат на период последнего месяца
             dtpStartDate.Value = DateTime.Today.AddMonths(-1);
             dtpEndDate.Value = DateTime.Today;
-
-            // Сброс статуса на "Все статусы"
             cmbStatus.SelectedIndex = 0;
-
-            // Применение сброшенных фильтров
-            ApplyFilters();
         }
 
-        /// <summary>
-        /// Обработчик двойного щелчка по ячейке DataGridView
-        /// Открывает детальный просмотр выбранного заказа
-        /// </summary>
         private void dataGridView_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.RowIndex >= 0) // Проверка, что щелчок был по строке, а не по заголовку
+            if (e.RowIndex >= 0)
             {
                 int orderId = (int)dataGridView.Rows[e.RowIndex].Cells["ID"].Value;
                 OpenOrderDetails(orderId);
             }
         }
 
-        /// <summary>
-        /// Ограничение ввода в поле поиска только цифрами
-        /// Так как поиск осуществляется по номеру заказа
-        /// </summary>
         private void txtSearch_KeyPress(object sender, KeyPressEventArgs e)
         {
             if (!char.IsDigit(e.KeyChar) && !char.IsControl(e.KeyChar))
             {
-                e.Handled = true; // Блокируем ввод нецифровых символов
+                e.Handled = true;
             }
         }
+
+        private void OpenOrderDetails(int orderId)
+        {
+            this.Visible = false;
+            ViewingOrderAdmin detailsForm = new ViewingOrderAdmin(orderId);
+            detailsForm.ShowDialog();
+            this.Visible = true;
+            LoadOrders();
+        }
+
+        #endregion
     }
 }

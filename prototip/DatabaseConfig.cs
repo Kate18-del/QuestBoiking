@@ -12,6 +12,6 @@ namespace prototip
     /// </summary>
     public static class DatabaseConfig
     {
-        public static string ConnectionString => "server=10.207.106.12;database=db99;uid=user99;pwd=rx63;";
+        public static string ConnectionString => "server=localhost;database=questbooking;uid=root;pwd=root;";
     }
 }
