@@ -21,6 +21,8 @@ namespace prototip
         private BindingList<Order> allOrders;        // Все заказы из базы данных
         private BindingList<Order> filteredOrders;    // Отфильтрованные заказы
 
+        // Контекстное меню для таблицы заказов
+        private ContextMenuStrip contextMenu;
         // Репозиторий для работы с данными заказов
         private readonly OrderRepository _orderRepository;
 
@@ -40,6 +42,7 @@ namespace prototip
         public OrderAccountingManager()
         {
             InitializeComponent();
+            CreateContextMenu();
             // Инициализация репозитория для работы с БД
             _orderRepository = new OrderRepository();
             // Настройка всех элементов формы
@@ -266,6 +269,44 @@ namespace prototip
                 DataPropertyName = "ManagerName",
                 FillWeight = 13
             });
+        }
+
+        /// <summary>
+        /// Создание контекстного меню для таблицы заказов
+        /// </summary>
+        private void CreateContextMenu()
+        {
+            contextMenu = new ContextMenuStrip();
+
+            ToolStripMenuItem printReceiptItem = new ToolStripMenuItem("Распечатать чек");
+            printReceiptItem.Click += PrintReceiptItem_Click;
+
+            ToolStripMenuItem printAgreementItem = new ToolStripMenuItem("Распечатать договор согласия");
+            printAgreementItem.Click += PrintAgreementItem_Click;
+
+            contextMenu.Items.Add(printReceiptItem);
+            contextMenu.Items.Add(printAgreementItem);
+            contextMenu.Items.Add(new ToolStripSeparator());
+
+            dataGridView2.ContextMenuStrip = contextMenu;
+        }
+
+        private void PrintReceipt(int orderId)
+        {
+            using (ViewingOrderManager viewForm = new ViewingOrderManager(orderId))
+            {
+                viewForm.CreateReceiptPdf();  // PDF для повторной печати
+                viewForm.Close();
+            }
+        }
+
+        private void PrintAgreement(int orderId)
+        {
+            using (ViewingOrderManager viewForm = new ViewingOrderManager(orderId))
+            {
+                viewForm.CreateConsentAgreementPdf();  // PDF для повторной печати
+                viewForm.Close();
+            }
         }
 
         /// <summary>
@@ -581,6 +622,7 @@ namespace prototip
             {
                 // Создание нового приложения Excel
                 excelApp = new Excel.Application();
+                excelApp.Visible = false; // Сначала скрываем
                 workbook = excelApp.Workbooks.Add();
                 worksheet = workbook.ActiveSheet;
 
@@ -616,7 +658,7 @@ namespace prototip
 
                 // Заголовки колонок
                 string[] headers = { "№ заказа", "Дата приема", "Срок исполнения", "Клиент", "Телефон",
-                           "Квест", "Статус", "Кол-во чел.", "Сумма", "Менеджер" };
+                   "Квест", "Статус", "Кол-во чел.", "Сумма", "Менеджер" };
 
                 for (int i = 0; i < headers.Length; i++)
                 {
@@ -631,12 +673,9 @@ namespace prototip
                 foreach (var order in filteredOrders)
                 {
                     worksheet.Cells[row, 1] = order.ID;
-
-                    // ДАТА ПРИЕМА - как строка в правильном формате
                     worksheet.Cells[row, 2] = order.DateOfAdmission.ToString("dd.MM.yyyy HH:mm");
-                    worksheet.Cells[row, 2].NumberFormat = "@"; // Текстовый формат
+                    worksheet.Cells[row, 2].NumberFormat = "@";
 
-                    // СРОК ИСПОЛНЕНИЯ - как строка
                     if (order.DueDate.HasValue)
                     {
                         worksheet.Cells[row, 3] = order.DueDate.Value.ToString("dd.MM.yyyy HH:mm");
@@ -645,7 +684,7 @@ namespace prototip
                     {
                         worksheet.Cells[row, 3] = "";
                     }
-                    worksheet.Cells[row, 3].NumberFormat = "@"; // Текстовый формат
+                    worksheet.Cells[row, 3].NumberFormat = "@";
 
                     worksheet.Cells[row, 4] = order.ClientName;
                     worksheet.Cells[row, 5] = order.PhoneNumber;
@@ -655,35 +694,28 @@ namespace prototip
                     worksheet.Cells[row, 9] = order.TotalPrice ?? 0;
                     worksheet.Cells[row, 10] = order.ManagerName;
 
-                    // Форматирование для суммы
                     if (order.TotalPrice.HasValue)
                     {
                         worksheet.Cells[row, 9].NumberFormat = "#,##0\" руб.\"";
                     }
-
-                    // Форматирование для колонки с количеством людей
                     worksheet.Cells[row, 8].NumberFormat = "0";
 
                     row++;
                 }
 
                 // Настройка ширины колонок
-                worksheet.Columns.AutoFit(); // Автоподбор ширины
+                worksheet.Columns.AutoFit();
+                worksheet.Columns[2].ColumnWidth = 15;
+                worksheet.Columns[3].ColumnWidth = 15;
+                worksheet.Columns[4].ColumnWidth = 20;
+                worksheet.Columns[5].ColumnWidth = 12;
+                worksheet.Columns[6].ColumnWidth = 20;
+                worksheet.Columns[7].ColumnWidth = 10;
+                worksheet.Columns[8].ColumnWidth = 10;
+                worksheet.Columns[9].ColumnWidth = 12;
+                worksheet.Columns[10].ColumnWidth = 25;
 
-                // Ручная установка ширины для колонок с датами
-                worksheet.Columns[2].ColumnWidth = 15; // Дата приема
-                worksheet.Columns[3].ColumnWidth = 15; // Срок исполнения
-
-                // Ручная установка ширины для других колонок
-                worksheet.Columns[4].ColumnWidth = 20; // Клиент
-                worksheet.Columns[5].ColumnWidth = 12; // Телефон
-                worksheet.Columns[6].ColumnWidth = 20; // Квест
-                worksheet.Columns[7].ColumnWidth = 10; // Статус
-                worksheet.Columns[8].ColumnWidth = 10; // Кол-во чел.
-                worksheet.Columns[9].ColumnWidth = 12; // Сумма
-                worksheet.Columns[10].ColumnWidth = 15; // Менеджер
-
-                // Добавление границ для области данных
+                // Добавление границ
                 Excel.Range dataRange = worksheet.Range[worksheet.Cells[7, 1], worksheet.Cells[row - 1, 10]];
                 dataRange.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
 
@@ -693,23 +725,32 @@ namespace prototip
 
                 // Сохранение файла
                 workbook.SaveAs(filePath);
-            }
-            finally
-            {
-                // Освобождение ресурсов COM-объектов
-                if (workbook != null)
-                {
-                    workbook.Close(false);
-                }
-                if (excelApp != null)
-                {
-                    excelApp.Quit();
-                }
 
-                // Очистка COM-объектов для предотвращения утечек памяти
+                // Закрываем книгу
+                workbook.Close(false);
+                excelApp.Quit();
+
+                // Освобождаем ресурсы
                 System.Runtime.InteropServices.Marshal.ReleaseComObject(worksheet);
                 System.Runtime.InteropServices.Marshal.ReleaseComObject(workbook);
                 System.Runtime.InteropServices.Marshal.ReleaseComObject(excelApp);
+
+                // ОТКРЫВАЕМ СОХРАНЕННЫЙ ФАЙЛ
+                System.Diagnostics.Process.Start(filePath);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при экспорте в Excel: {ex.Message}", "Ошибка",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+                // Освобождение ресурсов в случае ошибки
+                if (worksheet != null) System.Runtime.InteropServices.Marshal.ReleaseComObject(worksheet);
+                if (workbook != null) System.Runtime.InteropServices.Marshal.ReleaseComObject(workbook);
+                if (excelApp != null)
+                {
+                    excelApp.Quit();
+                    System.Runtime.InteropServices.Marshal.ReleaseComObject(excelApp);
+                }
             }
         }
 
@@ -730,10 +771,64 @@ namespace prototip
         /// </summary>
         private void btnMenu_Click(object sender, EventArgs e)
         {
-            this.Visible = false;
+            this.Hide();
             MainManager auto = new MainManager();
             auto.ShowDialog();
-            this.Visible = true;
+            this.Close();
         }
+        /// <summary>
+        /// Печать чека из контекстного меню
+        /// </summary>
+        private void PrintReceiptItem_Click(object sender, EventArgs e)
+        {
+            if (dataGridView2.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("Выберите заказ для печати чека!", "Информация",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            int orderId = GetSelectedOrderId();
+            if (orderId > 0)
+            {
+                PrintReceipt(orderId);
+            }
+        }
+
+        /// <summary>
+        /// Печать договора согласия из контекстного меню
+        /// </summary>
+        private void PrintAgreementItem_Click(object sender, EventArgs e)
+        {
+            if (dataGridView2.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("Выберите заказ для печати договора!", "Информация",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            int orderId = GetSelectedOrderId();
+            if (orderId > 0)
+            {
+                PrintAgreement(orderId);
+            }
+        }
+
+        /// <summary>
+        /// Получение ID выбранного заказа
+        /// </summary>
+        private int GetSelectedOrderId()
+        {
+            if (dataGridView2.SelectedRows.Count > 0)
+            {
+                var selectedRow = dataGridView2.SelectedRows[0];
+                if (selectedRow.Cells["ID"].Value != null)
+                {
+                    return Convert.ToInt32(selectedRow.Cells["ID"].Value);
+                }
+            }
+            return 0;
+        }
+
     }
 }

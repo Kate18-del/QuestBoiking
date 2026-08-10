@@ -502,36 +502,28 @@ namespace prototip
         /// <summary>
         /// Обработчики кнопок возврата в главное меню для разных вкладок
         /// </summary>
-        private void btnMenu_Click(object sender, EventArgs e)
-        {
-            this.Visible = false;
-            MainAdmin auto = new MainAdmin();
-            auto.ShowDialog();
-            this.Visible = true;
-        }
-
         private void btnMenu2_Click(object sender, EventArgs e)
         {
-            this.Visible = false;
+            this.Hide();
             MainAdmin auto = new MainAdmin();
             auto.ShowDialog();
-            this.Visible = true;
+            this.Close();
         }
 
         private void btnMenu3_Click(object sender, EventArgs e)
         {
-            this.Visible = false;
+            this.Hide();
             MainAdmin auto = new MainAdmin();
             auto.ShowDialog();
-            this.Visible = true;
+            this.Close();
         }
 
         private void btnMenu4_Click(object sender, EventArgs e)
         {
-            this.Visible = false;
+            this.Hide();
             MainAdmin auto = new MainAdmin();
             auto.ShowDialog();
-            this.Visible = true;
+            this.Close();
         }
 
         /// <summary>

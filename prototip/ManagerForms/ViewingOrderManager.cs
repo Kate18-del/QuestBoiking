@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using Word = Microsoft.Office.Interop.Word;
+using Excel = Microsoft.Office.Interop.Excel;
 
 namespace prototip
 {
@@ -251,7 +252,7 @@ namespace prototip
         /// <summary>
         /// Создание кассового чека в формате Word
         /// </summary>
-        private void CreateReceipt()
+        public void CreateReceipt()
         {
             Word.Application wordApp = null;
             Word.Document doc = null;
@@ -355,182 +356,174 @@ namespace prototip
         /// <summary>
         /// Создание договора согласия на участие в квесте
         /// </summary>
-        private void CreateConsentAgreement()
+        /// <summary>
+        /// Создание договора согласия на участие в квесте
+        /// </summary>
+        public void CreateConsentAgreement()
         {
             Word.Application wordApp = null;
             Word.Document doc = null;
 
             try
             {
-                // Создание документа Word
                 wordApp = new Word.Application();
                 doc = wordApp.Documents.Add();
-
-                // Настройка документа
                 wordApp.Visible = true;
-                doc.PageSetup.Orientation = Word.WdOrientation.wdOrientPortrait;
-                doc.PageSetup.TopMargin = 72;
-                doc.PageSetup.BottomMargin = 72;
-                doc.PageSetup.LeftMargin = 72;
-                doc.PageSetup.RightMargin = 72;
 
-                // ЗАГОЛОВОК ДОКУМЕНТА
+                // Настройка страницы (уменьшенные отступы для экономии места)
+                doc.PageSetup.TopMargin = 50;
+                doc.PageSetup.BottomMargin = 40;
+                doc.PageSetup.LeftMargin = 60;
+                doc.PageSetup.RightMargin = 40;
+
+                // ===== ЗАГОЛОВОК =====
                 Word.Paragraph title = doc.Paragraphs.Add();
-                title.Range.Text = "ДОГОВОР СОГЛАСИЯ НА УЧАСТИЕ В КВЕСТЕ\n";
+                title.Range.Text = "ДОГОВОР СОГЛАСИЯ НА УЧАСТИЕ В КВЕСТЕ";
                 title.Range.Font.Name = "Times New Roman";
-                title.Range.Font.Size = 16;
+                title.Range.Font.Size = 14;
                 title.Range.Font.Bold = 1;
                 title.Range.ParagraphFormat.Alignment = Word.WdParagraphAlignment.wdAlignParagraphCenter;
+                title.Range.ParagraphFormat.SpaceAfter = 15;
                 title.Range.InsertParagraphAfter();
 
-                // Номер договора и дата
+                // ===== Номер и дата =====
                 Word.Paragraph header = doc.Paragraphs.Add();
-                header.Range.Text = $"Договор № {orderId} от {DateTime.Now:dd.MM.yyyy}\n\n";
+                header.Range.Text = $"Договор № {orderId} от {DateTime.Now:dd.MM.yyyy} г.";
+                header.Range.Font.Name = "Times New Roman";
                 header.Range.Font.Size = 12;
                 header.Range.ParagraphFormat.Alignment = Word.WdParagraphAlignment.wdAlignParagraphRight;
+                header.Range.ParagraphFormat.SpaceAfter = 20;
                 header.Range.InsertParagraphAfter();
 
-                // СТОРОНЫ ДОГОВОРА
+                // ===== Город =====
+                Word.Paragraph city = doc.Paragraphs.Add();
+                city.Range.Text = "г. Москва";
+                city.Range.Font.Name = "Times New Roman";
+                city.Range.Font.Size = 12;
+                city.Range.ParagraphFormat.SpaceAfter = 6;
+                city.Range.InsertParagraphAfter();
+
+                // ===== СТОРОНЫ =====
                 Word.Paragraph parties = doc.Paragraphs.Add();
-                parties.Range.Text = "г. Москва\n\n";
-                parties.Range.Text += "ООО \"Квестиум\", именуемое в дальнейшем \"Исполнитель\", в лице директора Иванова И.И., ";
-                parties.Range.Text += "действующего на основании Устава, с одной стороны, и\n";
-                parties.Range.Text += $"Гражданин(ка) {textBox2.Text}, именуемый(ая) в дальнейшем \"Участник\", с другой стороны, ";
-                parties.Range.Text += "заключили настоящий договор о нижеследующем:\n\n";
+                parties.Range.Font.Name = "Times New Roman";
                 parties.Range.Font.Size = 12;
                 parties.Range.ParagraphFormat.Alignment = Word.WdParagraphAlignment.wdAlignParagraphJustify;
+                parties.Range.ParagraphFormat.FirstLineIndent = 36;
+                parties.Range.ParagraphFormat.SpaceAfter = 6;
+                parties.Range.Text = $"ООО «Квестиум», именуемое в дальнейшем «Исполнитель», в лице директора Иванова И.И., с одной стороны, и гражданин(ка) {textBox2.Text}, именуемый(ая) «Участник», с другой стороны, заключили настоящий договор:";
                 parties.Range.InsertParagraphAfter();
 
-                // Разделы договора
+                // ===== РАЗДЕЛЫ (компактные) =====
                 AddSection(doc, "1. ПРЕДМЕТ ДОГОВОРА",
                     "1.1. Исполнитель обязуется предоставить, а Участник обязуется оплатить услуги по организации и проведению квеста.");
 
                 AddSection(doc, "2. УСЛОВИЯ ПРОВЕДЕНИЯ КВЕСТА",
                     "2.1. Наименование квеста: " + comboBox1.Text + "\n" +
-                    "2.2. Дата и время проведения: " + dateTimePicker2.Value.ToString("dd.MM.yyyy HH:mm") + "\n" +
+                    "2.2. Дата и время: " + dateTimePicker2.Value.ToString("dd.MM.yyyy в HH:mm") + "\n" +
                     "2.3. Количество участников: " + participantsCount + " человек\n" +
                     "2.4. Продолжительность: 60 минут\n" +
-                    "2.5. Адрес проведения: г. Москва, ул. Примерная, д. 1, квест-рум \"Adventure Zone\"");
+                    "2.5. Адрес: г. Москва, ул. Примерная, д. 1");
 
-                AddSection(doc, "3. ПРАВА И ОБЯЗАННОСТИ СТОРОН",
-                    "3.1. Исполнитель обязуется:\n" +
-                    "   а) Обеспечить безопасность участников во время прохождения квеста;\n" +
-                    "   б) Предоставить необходимое оборудование и реквизит;\n" +
-                    "   в) Соблюдать конфиденциальность персональных данных участников.\n\n" +
-                    "3.2. Участник обязуется:\n" +
-                    "   а) Соблюдать правила техники безопасности;\n" +
-                    "   б) Не наносить ущерб имуществу Исполнителя;\n" +
-                    "   в) Прибыть на квест за 15 минут до назначенного времени.");
+                AddSection(doc, "3. ПРАВА И ОБЯЗАННОСТИ",
+                    "3.1. Исполнитель обязуется обеспечить безопасность и предоставить оборудование.\n" +
+                    "3.2. Участник обязуется соблюдать правила и не наносить ущерб имуществу.");
 
-                AddSection(doc, "4. СТОИМОСТЬ УСЛУГ И ПОРЯДОК РАСЧЕТОВ",
-                    "4.1. Стоимость услуг составляет: " + finalPrice.ToString("C") + " (включая НДС 20%).\n" +
-                    "4.2. Оплата производится в полном объеме не менее чем за 24 часа до начала квеста.\n" +
-                    "4.3. В случае отмены бронирования менее чем за 24 часа, предоплата не возвращается.");
+                AddSection(doc, "4. СТОИМОСТЬ УСЛУГ",
+                    "4.1. Стоимость: " + finalPrice.ToString("C") + " (включая НДС 20%).\n" +
+                    "4.2. Оплата производится не менее чем за 24 часа до начала.");
 
-                AddSection(doc, "5. ОТВЕТСТВЕННОСТЬ СТОРОН",
-                    "5.1. Исполнитель не несет ответственности за:\n" +
-                    "   а) Личные вещи участников;\n" +
-                    "   б) Действия участников, повлекшие причинение вреда их здоровью;\n" +
-                    "   в) Неявку участников в назначенное время.\n\n" +
-                    "5.2. Участник несет полную материальную ответственность за ущерб, причиненный имуществу Исполнителя.");
+                AddSection(doc, "5. ОТВЕТСТВЕННОСТЬ",
+                    "5.1. Исполнитель не несет ответственности за личные вещи участников.\n" +
+                    "5.2. Участник несет ответственность за ущерб имуществу Исполнителя.");
 
                 AddSection(doc, "6. ПЕРСОНАЛЬНЫЕ ДАННЫЕ",
-                    "6.1. Участник дает согласие на обработку своих персональных данных в соответствии с Федеральным законом №152-ФЗ.\n" +
-                    "6.2. Исполнитель обязуется не передавать персональные данные третьим лицам.");
+                    "6.1. Участник дает согласие на обработку персональных данных согласно ФЗ № 152-ФЗ.\n" +
+                    "6.2. Исполнитель обязуется не передавать данные третьим лицам.");
 
                 AddSection(doc, "7. ЗАКЛЮЧИТЕЛЬНЫЕ ПОЛОЖЕНИЯ",
-                    "7.1. Настоящий договор вступает в силу с момента подписания и действует до полного исполнения обязательств.\n" +
-                    "7.2. Все споры решаются путем переговоров, а при невозможности достижения согласия - в судебном порядке.");
+                    "7.1. Договор вступает в силу с момента подписания.\n" +
+                    "7.2. Споры решаются путем переговоров.\n" +
+                    "7.3. Договор составлен в двух экземплярах.");
 
-                doc.Paragraphs.Add();
+                // ===== ПОДПИСИ СТОРОН =====
+                Word.Paragraph signTitle = doc.Paragraphs.Add();
+                signTitle.Range.Text = "ПОДПИСИ СТОРОН";
+                signTitle.Range.Font.Name = "Times New Roman";
+                signTitle.Range.Font.Size = 12;
+                signTitle.Range.Font.Bold = 1;
+                signTitle.Range.ParagraphFormat.Alignment = Word.WdParagraphAlignment.wdAlignParagraphCenter;
+                signTitle.Range.ParagraphFormat.SpaceBefore = 20;
+                signTitle.Range.ParagraphFormat.SpaceAfter = 15;
+                signTitle.Range.InsertParagraphAfter();
 
-                // ПОДПИСИ СТОРОН
-                Word.Paragraph signatures = doc.Paragraphs.Add();
-                signatures.Range.Text = "ПОДПИСИ СТОРОН:\n\n";
-                signatures.Range.Font.Bold = 1;
-                signatures.Range.InsertParagraphAfter();
+                // Таблица подписей
+                Word.Paragraph tblPar = doc.Paragraphs.Add();
+                Word.Table signTable = doc.Tables.Add(tblPar.Range, 2, 3);
+                signTable.Borders.Enable = 0;
+                signTable.Range.Font.Name = "Times New Roman";
+                signTable.Range.Font.Size = 12;
 
-                // Таблица для подписей
-                Word.Table signTable = doc.Tables.Add(doc.Paragraphs.Add().Range, 2, 3);
-                signTable.Borders.Enable = 1;
+                signTable.Cell(1, 1).Range.Text = "Исполнитель:";
+                signTable.Cell(1, 1).Range.Font.Bold = 1;
+                signTable.Cell(1, 2).Range.Text = "ООО «Квестиум»";
+                signTable.Cell(1, 3).Range.Text = "___________ /Иванов И.И./";
 
-                signTable.Cell(1, 1).Range.Text = "ИСПОЛНИТЕЛЬ:";
-                signTable.Cell(1, 2).Range.Text = "ООО \"Квестиум\"";
-                signTable.Cell(1, 3).Range.Text = "___________________\nИванов И.И.";
-
-                signTable.Cell(2, 1).Range.Text = "УЧАСТНИК:";
+                signTable.Cell(2, 1).Range.Text = "Участник:";
+                signTable.Cell(2, 1).Range.Font.Bold = 1;
                 signTable.Cell(2, 2).Range.Text = textBox2.Text;
-                signTable.Cell(2, 3).Range.Text = "___________________\n" + textBox2.Text;
+                signTable.Cell(2, 3).Range.Text = "___________ /" + textBox2.Text + "/";
 
                 // Настройка ширины колонок
-                signTable.Columns[1].Width = 120;
+                signTable.Columns[1].Width = 100;
                 signTable.Columns[2].Width = 200;
                 signTable.Columns[3].Width = 200;
 
-                // Сохранение документа
+                // Сохранение
                 string fileName = $"Договор_согласия_{orderId}_{DateTime.Now:yyyyMMdd_HHmm}.docx";
                 string filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), fileName);
 
-                try
-                {
-                    doc.SaveAs(filePath);
-                    MessageBox.Show($"Договор согласия успешно создан!\nФайл сохранен: {filePath}",
-                        "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Документ создан, но возникла ошибка при сохранении:\n{ex.Message}",
-                        "Предупреждение", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
+                doc.SaveAs(filePath);
+                MessageBox.Show($"Договор сохранен: {filePath}", "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Ошибка создания договора: " + ex.Message,
-                    "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Ошибка: " + ex.Message, "Ошибка");
             }
             finally
             {
-                // Правильное закрытие Word и освобождение COM-объектов
                 CloseWordDocument(doc, wordApp);
-
-                // Принудительная сборка мусора для освобождения COM-объектов
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
             }
         }
 
         /// <summary>
-        /// Добавление горизонтальной линии в документ
-        /// </summary>
-        private void AddHorizontalLine(Word.Document doc)
-        {
-            Word.Paragraph line = doc.Paragraphs.Add();
-            line.Range.Text = "_________________________________________\n";
-            line.Range.ParagraphFormat.Alignment = Word.WdParagraphAlignment.wdAlignParagraphCenter;
-            line.Range.InsertParagraphAfter();
-        }
-
-        /// <summary>
-        /// Добавление раздела в документ с заголовком и содержимым
+        /// Добавление раздела с заголовком и содержимым (нормальные отступы)
         /// </summary>
         private void AddSection(Word.Document doc, string title, string content)
         {
+            // Заголовок раздела
             Word.Paragraph sectionTitle = doc.Paragraphs.Add();
-            sectionTitle.Range.Text = title + "\n";
-            sectionTitle.Range.Font.Bold = 1;
+            sectionTitle.Range.Text = title;
+            sectionTitle.Range.Font.Name = "Times New Roman";
             sectionTitle.Range.Font.Size = 12;
-            sectionTitle.Range.ParagraphFormat.Alignment = Word.WdParagraphAlignment.wdAlignParagraphLeft;
+            sectionTitle.Range.Font.Bold = 1;
+            sectionTitle.Range.ParagraphFormat.SpaceBefore = 16;
+            sectionTitle.Range.ParagraphFormat.SpaceAfter = 8;
             sectionTitle.Range.InsertParagraphAfter();
 
+            // Содержимое
             Word.Paragraph sectionContent = doc.Paragraphs.Add();
-            sectionContent.Range.Text = content + "\n\n";
+            sectionContent.Range.Text = content;
+            sectionContent.Range.Font.Name = "Times New Roman";
             sectionContent.Range.Font.Size = 12;
-            sectionContent.Range.ParagraphFormat.FirstLineIndent = 36;
             sectionContent.Range.ParagraphFormat.Alignment = Word.WdParagraphAlignment.wdAlignParagraphJustify;
+            sectionContent.Range.ParagraphFormat.FirstLineIndent = 35;
+            sectionContent.Range.ParagraphFormat.SpaceAfter = 4;
+            sectionContent.Range.ParagraphFormat.LineSpacingRule = Word.WdLineSpacing.wdLineSpace1pt5;
             sectionContent.Range.InsertParagraphAfter();
         }
+
 
         /// <summary>
         /// Закрытие документа Word и освобождение COM-объектов
@@ -569,10 +562,255 @@ namespace prototip
         /// </summary>
         private void btnMenu_Click(object sender, EventArgs e)
         {
-            this.Visible = false;
+            this.Hide();
             MainManager auto = new MainManager();
             auto.ShowDialog();
-            this.Visible = true;
+            this.Close();
+        }
+
+        /// <summary>
+        /// Создание чека в PDF (для повторной печати)
+        /// </summary>
+        public void CreateReceiptPdf()
+        {
+            var excelApp = new Excel.Application();
+            Excel.Workbook workbook = null;
+            Excel.Worksheet worksheet = null;
+
+            try
+            {
+                using (SaveFileDialog saveDialog = new SaveFileDialog())
+                {
+                    saveDialog.Filter = "PDF files (*.pdf)|*.pdf";
+                    saveDialog.FileName = $"Чек_№{orderId}_{DateTime.Now:yyyyMMdd}.pdf";
+                    saveDialog.Title = "Сохранить чек как PDF";
+
+                    if (saveDialog.ShowDialog() != DialogResult.OK) return;
+
+                    excelApp.Visible = false;
+                    workbook = excelApp.Workbooks.Add();
+                    worksheet = workbook.ActiveSheet;
+
+                    int row = 1;
+                    worksheet.Cells[row, 1] = "КАССОВЫЙ ЧЕК";
+                    worksheet.Range[worksheet.Cells[row, 1], worksheet.Cells[row, 3]].Merge();
+                    worksheet.Cells[row, 1].Font.Bold = true;
+                    worksheet.Cells[row, 1].Font.Size = 14;
+                    worksheet.Cells[row, 1].HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
+                    row += 2;
+
+                    worksheet.Cells[row, 1] = "ООО \"Квестиум\"";
+                    worksheet.Range[worksheet.Cells[row, 1], worksheet.Cells[row, 3]].Merge();
+                    row++;
+                    worksheet.Cells[row, 1] = $"Чек №{orderId} от {DateTime.Now:dd.MM.yy HH:mm}";
+                    worksheet.Range[worksheet.Cells[row, 1], worksheet.Cells[row, 3]].Merge();
+                    row++;
+                    worksheet.Cells[row, 1] = $"Кассир: {GetCurrentManagerName()}";
+                    worksheet.Range[worksheet.Cells[row, 1], worksheet.Cells[row, 3]].Merge();
+                    row += 2;
+
+                    worksheet.Cells[row, 1] = new string('─', 40);
+                    worksheet.Range[worksheet.Cells[row, 1], worksheet.Cells[row, 3]].Merge();
+                    row++;
+
+                    worksheet.Cells[row, 1] = "Услуга:";
+                    worksheet.Cells[row, 2] = comboBox1.Text;
+                    row++;
+                    worksheet.Cells[row, 1] = "Клиент:";
+                    worksheet.Cells[row, 2] = textBox2.Text;
+                    row++;
+                    worksheet.Cells[row, 1] = "Дата квеста:";
+                    worksheet.Cells[row, 2] = dateTimePicker2.Value.ToString("dd.MM.yy HH:mm");
+                    row++;
+                    worksheet.Cells[row, 1] = "Кол-во участников:";
+                    worksheet.Cells[row, 2] = participantsCount.ToString();
+                    row++;
+
+                    if (discount > 0)
+                    {
+                        worksheet.Cells[row, 1] = "Скидка (10%):";
+                        worksheet.Cells[row, 2] = $"-{discount:N0} руб.";
+                        row++;
+                    }
+
+                    worksheet.Cells[row, 1] = "ИТОГО:";
+                    worksheet.Cells[row, 2] = $"{finalPrice:N0} руб.";
+                    worksheet.Cells[row, 2].Font.Bold = true;
+                    row += 2;
+
+                    worksheet.Cells[row, 1] = new string('─', 40);
+                    worksheet.Range[worksheet.Cells[row, 1], worksheet.Cells[row, 3]].Merge();
+                    row += 2;
+                    worksheet.Cells[row, 1] = "Подпись: ___________________";
+                    row += 2;
+                    worksheet.Cells[row, 1] = "* Чек действителен для бухгалтерии";
+
+                    worksheet.Columns[1].ColumnWidth = 18;
+                    worksheet.Columns[2].ColumnWidth = 25;
+
+                    worksheet.ExportAsFixedFormat(Excel.XlFixedFormatType.xlTypePDF, saveDialog.FileName);
+
+                    workbook.Close(false);
+                    excelApp.Quit();
+
+                    System.Runtime.InteropServices.Marshal.ReleaseComObject(worksheet);
+                    System.Runtime.InteropServices.Marshal.ReleaseComObject(workbook);
+                    System.Runtime.InteropServices.Marshal.ReleaseComObject(excelApp);
+
+                    System.Diagnostics.Process.Start(saveDialog.FileName);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка");
+                if (worksheet != null) System.Runtime.InteropServices.Marshal.ReleaseComObject(worksheet);
+                if (workbook != null) System.Runtime.InteropServices.Marshal.ReleaseComObject(workbook);
+                if (excelApp != null) { excelApp.Quit(); System.Runtime.InteropServices.Marshal.ReleaseComObject(excelApp); }
+            }
+        }
+
+        /// <summary>
+        /// Создание договора в PDF (для повторной печати)
+        /// </summary>
+        public void CreateConsentAgreementPdf()
+        {
+            Word.Application wordApp = null;
+            Word.Document doc = null;
+
+            try
+            {
+                using (SaveFileDialog saveDialog = new SaveFileDialog())
+                {
+                    saveDialog.Filter = "PDF files (*.pdf)|*.pdf";
+                    saveDialog.FileName = $"Договор_№{orderId}_{DateTime.Now:yyyyMMdd}.pdf";
+                    saveDialog.Title = "Сохранить договор как PDF";
+
+                    if (saveDialog.ShowDialog() != DialogResult.OK) return;
+
+                    wordApp = new Word.Application();
+                    wordApp.Visible = false;
+                    doc = wordApp.Documents.Add();
+
+                    doc.PageSetup.TopMargin = 50;
+                    doc.PageSetup.BottomMargin = 40;
+                    doc.PageSetup.LeftMargin = 60;
+                    doc.PageSetup.RightMargin = 40;
+
+                    // Заголовок
+                    Word.Paragraph title = doc.Paragraphs.Add();
+                    title.Range.Text = "ДОГОВОР СОГЛАСИЯ НА УЧАСТИЕ В КВЕСТЕ";
+                    title.Range.Font.Name = "Times New Roman";
+                    title.Range.Font.Size = 14;
+                    title.Range.Font.Bold = 1;
+                    title.Range.ParagraphFormat.Alignment = Word.WdParagraphAlignment.wdAlignParagraphCenter;
+                    title.Range.ParagraphFormat.SpaceAfter = 15;
+                    title.Range.InsertParagraphAfter();
+
+                    // Номер и дата
+                    Word.Paragraph header = doc.Paragraphs.Add();
+                    header.Range.Text = $"Договор № {orderId} от {DateTime.Now:dd.MM.yyyy} г.";
+                    header.Range.Font.Name = "Times New Roman";
+                    header.Range.Font.Size = 12;
+                    header.Range.ParagraphFormat.Alignment = Word.WdParagraphAlignment.wdAlignParagraphRight;
+                    header.Range.ParagraphFormat.SpaceAfter = 20;
+                    header.Range.InsertParagraphAfter();
+
+                    // Стороны
+                    Word.Paragraph city = doc.Paragraphs.Add();
+                    city.Range.Font.Name = "Times New Roman";
+                    city.Range.Font.Size = 12;
+                    city.Range.ParagraphFormat.SpaceAfter = 6;
+                    city.Range.Text = "г. Москва";
+                    city.Range.InsertParagraphAfter();
+
+                    Word.Paragraph p1 = doc.Paragraphs.Add();
+                    p1.Range.Font.Name = "Times New Roman";
+                    p1.Range.Font.Size = 12;
+                    p1.Range.ParagraphFormat.Alignment = Word.WdParagraphAlignment.wdAlignParagraphJustify;
+                    p1.Range.ParagraphFormat.FirstLineIndent = 36;
+                    p1.Range.ParagraphFormat.SpaceAfter = 6;
+                    p1.Range.Text = $"ООО «Квестиум», именуемое в дальнейшем «Исполнитель», в лице директора Иванова И.И., с одной стороны, и гражданин(ка) {textBox2.Text}, именуемый(ая) «Участник», с другой стороны, заключили настоящий договор:";
+                    p1.Range.InsertParagraphAfter();
+
+                    // Разделы
+                    AddSection(doc, "1. ПРЕДМЕТ ДОГОВОРА",
+                        "1.1. Исполнитель обязуется предоставить, а Участник обязуется оплатить услуги по организации и проведению квеста.");
+
+                    AddSection(doc, "2. УСЛОВИЯ ПРОВЕДЕНИЯ КВЕСТА",
+                        "2.1. Наименование квеста: " + comboBox1.Text + "\n" +
+                        "2.2. Дата и время: " + dateTimePicker2.Value.ToString("dd.MM.yyyy в HH:mm") + "\n" +
+                        "2.3. Количество участников: " + participantsCount + " человек\n" +
+                        "2.4. Продолжительность: 60 минут\n" +
+                        "2.5. Адрес: г. Москва, ул. Примерная, д. 1");
+
+                    AddSection(doc, "3. ПРАВА И ОБЯЗАННОСТИ",
+                        "3.1. Исполнитель обязуется обеспечить безопасность и предоставить оборудование.\n" +
+                        "3.2. Участник обязуется соблюдать правила и не наносить ущерб имуществу.");
+
+                    AddSection(doc, "4. СТОИМОСТЬ УСЛУГ",
+                        "4.1. Стоимость: " + finalPrice.ToString("C") + " (включая НДС 20%).\n" +
+                        "4.2. Оплата производится не менее чем за 24 часа до начала.");
+
+                    AddSection(doc, "5. ОТВЕТСТВЕННОСТЬ",
+                        "5.1. Исполнитель не несет ответственности за личные вещи участников.\n" +
+                        "5.2. Участник несет ответственность за ущерб имуществу Исполнителя.");
+
+                    AddSection(doc, "6. ПЕРСОНАЛЬНЫЕ ДАННЫЕ",
+                        "6.1. Участник дает согласие на обработку персональных данных согласно ФЗ № 152-ФЗ.\n" +
+                        "6.2. Исполнитель обязуется не передавать данные третьим лицам.");
+
+                    AddSection(doc, "7. ЗАКЛЮЧИТЕЛЬНЫЕ ПОЛОЖЕНИЯ",
+                        "7.1. Договор вступает в силу с момента подписания.\n" +
+                        "7.2. Споры решаются путем переговоров.\n" +
+                        "7.3. Договор составлен в двух экземплярах.");
+
+                    // Подписи
+                    Word.Paragraph signTitle = doc.Paragraphs.Add();
+                    signTitle.Range.Text = "ПОДПИСИ СТОРОН";
+                    signTitle.Range.Font.Name = "Times New Roman";
+                    signTitle.Range.Font.Size = 12;
+                    signTitle.Range.Font.Bold = 1;
+                    signTitle.Range.ParagraphFormat.Alignment = Word.WdParagraphAlignment.wdAlignParagraphCenter;
+                    signTitle.Range.ParagraphFormat.SpaceBefore = 20;
+                    signTitle.Range.ParagraphFormat.SpaceAfter = 15;
+                    signTitle.Range.InsertParagraphAfter();
+
+                    Word.Paragraph tblPar = doc.Paragraphs.Add();
+                    Word.Table signTable = doc.Tables.Add(tblPar.Range, 2, 3);
+                    signTable.Borders.Enable = 0;
+                    signTable.Range.Font.Name = "Times New Roman";
+                    signTable.Range.Font.Size = 12;
+                    signTable.Cell(1, 1).Range.Text = "Исполнитель:";
+                    signTable.Cell(1, 1).Range.Font.Bold = 1;
+                    signTable.Cell(1, 2).Range.Text = "ООО «Квестиум»";
+                    signTable.Cell(1, 3).Range.Text = "___________ /Иванов И.И./";
+                    signTable.Cell(2, 1).Range.Text = "Участник:";
+                    signTable.Cell(2, 1).Range.Font.Bold = 1;
+                    signTable.Cell(2, 2).Range.Text = textBox2.Text;
+                    signTable.Cell(2, 3).Range.Text = "___________ /" + textBox2.Text + "/";
+                    signTable.Columns[1].Width = 100;
+                    signTable.Columns[2].Width = 200;
+                    signTable.Columns[3].Width = 200;
+
+                    // Сохраняем как PDF
+                    doc.SaveAs2(saveDialog.FileName, Word.WdSaveFormat.wdFormatPDF);
+                    doc.Close(false);
+                    wordApp.Quit();
+
+                    System.Runtime.InteropServices.Marshal.ReleaseComObject(doc);
+                    System.Runtime.InteropServices.Marshal.ReleaseComObject(wordApp);
+
+                    System.Diagnostics.Process.Start(saveDialog.FileName);
+
+                    MessageBox.Show($"Договор сохранен в PDF!", "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Ошибка: " + ex.Message, "Ошибка");
+                if (doc != null) System.Runtime.InteropServices.Marshal.ReleaseComObject(doc);
+                if (wordApp != null) { wordApp.Quit(); System.Runtime.InteropServices.Marshal.ReleaseComObject(wordApp); }
+            }
         }
     }
 }

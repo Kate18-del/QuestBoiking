@@ -38,35 +38,36 @@ namespace prototip
             this.btnBooks = new System.Windows.Forms.Button();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.panel1 = new System.Windows.Forms.Panel();
-            this.BtnSettings = new System.Windows.Forms.Button();
+            this.button1 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
+            this.panel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Font = new System.Drawing.Font("Comic Sans MS", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.label1.Font = new System.Drawing.Font("Comic Sans MS", 18F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.label1.Location = new System.Drawing.Point(93, 19);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(237, 29);
+            this.label1.Size = new System.Drawing.Size(270, 33);
             this.label1.TabIndex = 0;
             this.label1.Text = "Бронирование квестов";
             // 
             // label2
             // 
-            this.label2.AutoSize = true;
-            this.label2.Font = new System.Drawing.Font("Comic Sans MS", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.label2.Location = new System.Drawing.Point(166, 67);
+            this.label2.Font = new System.Drawing.Font("Comic Sans MS", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.label2.Location = new System.Drawing.Point(11, 67);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(222, 23);
+            this.label2.Size = new System.Drawing.Size(412, 23);
             this.label2.TabIndex = 1;
             this.label2.Text = "администратор Иванов.И.А.";
+            this.label2.TextAlign = System.Drawing.ContentAlignment.TopRight;
             // 
             // btnUsers
             // 
             this.btnUsers.BackColor = System.Drawing.SystemColors.GradientInactiveCaption;
             this.btnUsers.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
-            this.btnUsers.Font = new System.Drawing.Font("Comic Sans MS", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.btnUsers.Font = new System.Drawing.Font("Comic Sans MS", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.btnUsers.ForeColor = System.Drawing.SystemColors.ControlText;
             this.btnUsers.Location = new System.Drawing.Point(11, 117);
             this.btnUsers.Name = "btnUsers";
@@ -80,9 +81,9 @@ namespace prototip
             // 
             this.btnOrders.BackColor = System.Drawing.SystemColors.GradientInactiveCaption;
             this.btnOrders.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
-            this.btnOrders.Font = new System.Drawing.Font("Comic Sans MS", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.btnOrders.Font = new System.Drawing.Font("Comic Sans MS", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.btnOrders.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.btnOrders.Location = new System.Drawing.Point(11, 195);
+            this.btnOrders.Location = new System.Drawing.Point(7, 126);
             this.btnOrders.Name = "btnOrders";
             this.btnOrders.Size = new System.Drawing.Size(158, 42);
             this.btnOrders.TabIndex = 1;
@@ -94,9 +95,9 @@ namespace prototip
             // 
             this.btnExit.BackColor = System.Drawing.SystemColors.GradientInactiveCaption;
             this.btnExit.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
-            this.btnExit.Font = new System.Drawing.Font("Comic Sans MS", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.btnExit.Font = new System.Drawing.Font("Comic Sans MS", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.btnExit.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.btnExit.Location = new System.Drawing.Point(196, 381);
+            this.btnExit.Location = new System.Drawing.Point(230, 423);
             this.btnExit.Name = "btnExit";
             this.btnExit.Size = new System.Drawing.Size(193, 42);
             this.btnExit.TabIndex = 3;
@@ -108,11 +109,11 @@ namespace prototip
             // 
             this.btnBooks.BackColor = System.Drawing.SystemColors.GradientInactiveCaption;
             this.btnBooks.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
-            this.btnBooks.Font = new System.Drawing.Font("Comic Sans MS", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.btnBooks.Font = new System.Drawing.Font("Comic Sans MS", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.btnBooks.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.btnBooks.Location = new System.Drawing.Point(11, 274);
+            this.btnBooks.Location = new System.Drawing.Point(8, 192);
             this.btnBooks.Name = "btnBooks";
-            this.btnBooks.Size = new System.Drawing.Size(158, 42);
+            this.btnBooks.Size = new System.Drawing.Size(158, 43);
             this.btnBooks.TabIndex = 2;
             this.btnBooks.Text = "Справочники";
             this.btnBooks.UseVisualStyleBackColor = false;
@@ -123,7 +124,7 @@ namespace prototip
             this.pictureBox1.Image = global::prototip.Properties.Resources.logo;
             this.pictureBox1.Location = new System.Drawing.Point(196, 117);
             this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(193, 199);
+            this.pictureBox1.Size = new System.Drawing.Size(227, 232);
             this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
             this.pictureBox1.TabIndex = 2;
             this.pictureBox1.TabStop = false;
@@ -131,35 +132,35 @@ namespace prototip
             // panel1
             // 
             this.panel1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.panel1.Controls.Add(this.button1);
+            this.panel1.Controls.Add(this.btnBooks);
+            this.panel1.Controls.Add(this.btnOrders);
             this.panel1.Location = new System.Drawing.Point(3, 57);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(391, 318);
+            this.panel1.Size = new System.Drawing.Size(425, 352);
             this.panel1.TabIndex = 4;
             // 
-            // BtnSettings
+            // button1
             // 
-            this.BtnSettings.BackColor = System.Drawing.SystemColors.GradientInactiveCaption;
-            this.BtnSettings.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
-            this.BtnSettings.Font = new System.Drawing.Font("Comic Sans MS", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.BtnSettings.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.BtnSettings.Location = new System.Drawing.Point(3, 381);
-            this.BtnSettings.Name = "BtnSettings";
-            this.BtnSettings.Size = new System.Drawing.Size(128, 42);
-            this.BtnSettings.TabIndex = 5;
-            this.BtnSettings.Text = "Настройки";
-            this.BtnSettings.UseVisualStyleBackColor = false;
-            this.BtnSettings.Click += new System.EventHandler(this.BtnSettings_Click);
+            this.button1.BackColor = System.Drawing.SystemColors.GradientInactiveCaption;
+            this.button1.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
+            this.button1.Font = new System.Drawing.Font("Comic Sans MS", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.button1.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.button1.Location = new System.Drawing.Point(7, 259);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(158, 43);
+            this.button1.TabIndex = 3;
+            this.button1.Text = "Статистика";
+            this.button1.UseVisualStyleBackColor = false;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
             // MainAdmin
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 18F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Window;
-            this.ClientSize = new System.Drawing.Size(401, 435);
-            this.Controls.Add(this.BtnSettings);
-            this.Controls.Add(this.btnBooks);
+            this.ClientSize = new System.Drawing.Size(435, 477);
             this.Controls.Add(this.btnExit);
-            this.Controls.Add(this.btnOrders);
             this.Controls.Add(this.btnUsers);
             this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.label2);
@@ -175,6 +176,7 @@ namespace prototip
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Главная - Администратор";
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
+            this.panel1.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -190,6 +192,6 @@ namespace prototip
         private System.Windows.Forms.Button btnExit;
         private System.Windows.Forms.Button btnBooks;
         private System.Windows.Forms.Panel panel1;
-        private System.Windows.Forms.Button BtnSettings;
+        private System.Windows.Forms.Button button1;
     }
 }

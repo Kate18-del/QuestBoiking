@@ -19,6 +19,7 @@ namespace prototip
     {
         // Текущий номер заказа (счетчик) - для отображения, но не используется в создании
         private int orderNumber = 0;
+        private DateTime lastCheckedDate = DateTime.MinValue;
 
         // Подключение к базе данных
         private MySqlConnection connection;
@@ -216,8 +217,8 @@ namespace prototip
             dateTimePicker1.Value = DateTime.Now;
             dateTimePicker1.Enabled = false;
 
-            // Дата выполнения - завтра
-            dateTimePicker2.Value = DateTime.Now.AddDays(1);
+            // Дата выполнения 
+            dateTimePicker2.Value = DateTime.Now;
             dateTimePicker2.MinDate = DateTime.Now;
 
             // Подписываемся на событие изменения даты
@@ -237,10 +238,11 @@ namespace prototip
         /// </summary>
         private void DateTimePicker2_ValueChanged(object sender, EventArgs e)
         {
-            // Проверяем доступность выбранной даты при ее изменении
-            if (currentServiceArticle != 0)
+            // Проверяем, действительно ли изменилась дата
+            if (currentServiceArticle != 0 && dateTimePicker2.Value.Date != lastCheckedDate.Date)
             {
-                CheckDateAvailability(dateTimePicker2.Value);
+                lastCheckedDate = dateTimePicker2.Value.Date;
+                UpdateAvailableSlotsInfo();
             }
         }
 
@@ -527,87 +529,28 @@ namespace prototip
                     {
                         selectedServiceDayOfWeek = Convert.ToInt32(serviceRow["DayOfTheWeek"]);
                         selectedServiceDuration = Convert.ToInt32(serviceRow["Time"]);
-
-                        // Обновляем dateTimePicker2 с учетом дня недели услуги
-                        UpdateDueDateBasedOnDayOfWeek();
                     }
 
-                    // Устанавливаем название услуги в поле (без цены и артикула)
+                    // Устанавливаем название услуги в поле
                     int endIndex = selectedItem.LastIndexOf(" - ");
                     textBox4.Text = selectedItem.Substring(0, endIndex);
                     textBox4.ForeColor = SystemColors.WindowText;
                 }
                 HideServicesList();
+                UpdateAvailableSlotsInfo();
             }
         }
 
+       
         /// <summary>
-        /// Обновление даты выполнения с учетом дня недели услуги
+        /// Получение  даты с указанным днем недели
         /// </summary>
-        private void UpdateDueDateBasedOnDayOfWeek()
-        {
-            if (selectedServiceDayOfWeek == 0) return;
-
-            DateTime currentDate = DateTime.Now.Date;
-            DateTime dueDate;
-
-            // Если DayOfTheWeek = 30, это означает "любой день"
-            if (selectedServiceDayOfWeek == 30)
-            {
-                dueDate = currentDate.AddDays(1); // Завтра
-
-                // Проверяем, не занят ли завтрашний день
-                if (IsDateBooked(dueDate))
-                {
-                    dueDate = GetNextAvailableDate(currentDate.AddDays(2));
-                }
-            }
-            else
-            {
-                dueDate = GetNextDayOfWeek(currentDate, selectedServiceDayOfWeek);
-
-                // Проверяем, не занят ли этот день
-                if (IsDateBooked(dueDate))
-                {
-                    dueDate = GetNextAvailableDayOfWeek(dueDate, selectedServiceDayOfWeek);
-                }
-            }
-
-            // Устанавливаем дату
-            dateTimePicker2.Value = dueDate;
-
-            // Проверяем доступность установленной даты
-            CheckDateAvailability(dueDate);
-        }
-
-        /// <summary>
-        /// Получение следующей даты с указанным днем недели
-        /// </summary>
-        private DateTime GetNextDayOfWeek(DateTime startDate, int targetDayOfWeek)
+        private DateTime GetNextDayOfWeek(DateTime startDate, int targetDayOfWeek, bool allowToday = true)
         {
             int daysToAdd = ((targetDayOfWeek - (int)startDate.DayOfWeek + 7) % 7);
-            if (daysToAdd == 0) daysToAdd = 7; // Если сегодня нужный день, берем следующий
+            // Убираем принудительный сдвиг на 7 дней
+            // Если сегодня нужный день, оставляем сегодня
             return startDate.AddDays(daysToAdd);
-        }
-
-        /// <summary>
-        /// Получение следующей доступной даты с указанным днем недели
-        /// </summary>
-        private DateTime GetNextAvailableDayOfWeek(DateTime startDate, int targetDayOfWeek)
-        {
-            DateTime currentDate = startDate;
-            int maxAttempts = 28; // Максимум 4 недели вперед
-
-            for (int i = 1; i <= maxAttempts; i++)
-            {
-                currentDate = GetNextDayOfWeek(currentDate, targetDayOfWeek);
-                if (!IsDateBooked(currentDate))
-                {
-                    return currentDate;
-                }
-            }
-
-            return startDate; // Если не нашли свободный день, возвращаем исходную дату
         }
 
         /// <summary>
@@ -633,6 +576,9 @@ namespace prototip
         /// <summary>
         /// Проверка, занята ли дата (есть ли заказ на эту дату)
         /// </summary>
+        /// <summary>
+        /// Проверка, занята ли дата (есть ли сеанс на эту дату и есть ли свободные места)
+        /// </summary>
         private bool IsDateBooked(DateTime date)
         {
             try
@@ -640,26 +586,55 @@ namespace prototip
                 if (connection.State != ConnectionState.Open)
                     connection.Open();
 
-                // Проверяем, есть ли уже заказ на эту дату (по DueDate)
+                // Проверяем через таблицу schedule
                 string query = @"
-                    SELECT COUNT(*) FROM orders 
-                    WHERE DATE(DueDate) = DATE(@SelectedDate)";
+            SELECT COUNT(*) FROM schedule 
+            WHERE DATE(StartTime) = DATE(@SelectedDate) 
+            AND IsActive = 1
+            AND BookedSlots >= MaxSlots";
 
                 MySqlCommand cmd = new MySqlCommand(query, connection);
                 cmd.Parameters.AddWithValue("@SelectedDate", date.Date);
 
-                int count = Convert.ToInt32(cmd.ExecuteScalar());
-                return count > 0;
+                int fullSlots = Convert.ToInt32(cmd.ExecuteScalar());
+                return fullSlots > 0;
             }
-            catch (Exception ex)
+            catch
             {
-                MessageBox.Show("Ошибка проверки доступности даты: " + ex.Message);
-                return true; // В случае ошибки считаем дату занятой
+                return true;
             }
             finally
             {
                 if (connection.State == ConnectionState.Open)
                     connection.Close();
+            }
+        }
+
+        /// <summary>
+        /// Получение ID сеанса по услуге и дате
+        /// </summary>
+        private int GetScheduleID(MySqlConnection conn, int serviceArticle, DateTime date)
+        {
+            try
+            {
+                string query = @"
+            SELECT ScheduleID FROM schedule 
+            WHERE ServiceID = @ServiceID 
+            AND DATE(StartTime) = DATE(@Date)
+            AND IsActive = 1
+            AND BookedSlots < MaxSlots
+            LIMIT 1";
+
+                MySqlCommand cmd = new MySqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@ServiceID", serviceArticle);
+                cmd.Parameters.AddWithValue("@Date", date.Date);
+
+                object result = cmd.ExecuteScalar();
+                return result != null ? Convert.ToInt32(result) : 0;
+            }
+            catch
+            {
+                return 0;
             }
         }
 
@@ -699,10 +674,10 @@ namespace prototip
         /// </summary>
         private void btnMenu_Click(object sender, EventArgs e)
         {
-            this.Visible = false;
+            this.Hide();
             MainManager auto = new MainManager();
             auto.ShowDialog();
-            this.Visible = true;
+            this.Close();
         }
 
         /// <summary>
@@ -710,119 +685,200 @@ namespace prototip
         /// Проверяет все поля и создает заказ в БД
         /// </summary>
         private void btnViewOrder_Click(object sender, EventArgs e)
-        {
-            // Проверяем, заполнены ли обязательные поля
+        {// Проверки полей
             if (currentClientID == 0)
             {
-                MessageBox.Show("Выберите клиента!", "Ошибка",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Выберите клиента!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 textBox2.Focus();
                 return;
             }
 
             if (currentServiceArticle == 0)
             {
-                MessageBox.Show("Выберите услугу!", "Ошибка",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Выберите услугу!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 textBox4.Focus();
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(textBox3.Text) || textBox3.Text == "Количество человек")
             {
-                MessageBox.Show("Укажите количество человек!", "Ошибка",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Укажите количество человек!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 textBox3.Focus();
                 return;
             }
 
             if (!int.TryParse(textBox3.Text, out int participants) || participants <= 0)
             {
-                MessageBox.Show("Введите корректное количество человек!", "Ошибка",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Введите корректное количество человек!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 textBox3.Focus();
                 return;
             }
 
-            // Проверка ограничения на 25 человек
             if (participants > 25)
             {
-                MessageBox.Show("Количество человек не может превышать 25!", "Ошибка",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Количество человек не может превышать 25!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 textBox3.Focus();
-                textBox3.SelectAll();
                 return;
             }
 
-            // Проверяем доступность выбранной даты
-            if (IsDateBooked(dateTimePicker2.Value))
+            // Используем локальное подключение вместо общего connection
+            using (MySqlConnection conn = new MySqlConnection(DatabaseConfig.ConnectionString))
             {
-                MessageBox.Show("На выбранную дату уже существует заказ! Пожалуйста, выберите другую дату.",
-                    "Дата занята", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                try
+                {
+                    conn.Open();
 
-                // Предлагаем следующую доступную дату
-                SuggestNextAvailableDate();
-                return;
+                    // Получаем ID сеанса
+                    int scheduleID = GetScheduleID(conn, currentServiceArticle, dateTimePicker2.Value);
+
+                    if (scheduleID == 0)
+                    {
+                        MessageBox.Show("На выбранную дату нет доступных сеансов для этой услуги!",
+                            "Нет сеансов", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    // Проверяем наличие свободных мест
+                    string checkSlotsQuery = @"
+                SELECT MaxSlots, BookedSlots 
+                FROM schedule 
+                WHERE ScheduleID = @ScheduleID";
+
+                    MySqlCommand checkCmd = new MySqlCommand(checkSlotsQuery, conn);
+                    checkCmd.Parameters.AddWithValue("@ScheduleID", scheduleID);
+
+                    using (MySqlDataReader reader = checkCmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            int maxSlots = reader.GetInt32("MaxSlots");
+                            int bookedSlots = reader.GetInt32("BookedSlots");
+
+                            if (bookedSlots + participants > maxSlots)
+                            {
+                                MessageBox.Show($"Недостаточно свободных мест! Доступно: {maxSlots - bookedSlots}",
+                                    "Нет мест", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                return;
+                            }
+                        }
+                    }
+
+                    // Получаем цену услуги
+                    string getPriceQuery = "SELECT Price FROM services WHERE Article = @Article";
+                    MySqlCommand getPriceCmd = new MySqlCommand(getPriceQuery, conn);
+                    getPriceCmd.Parameters.AddWithValue("@Article", currentServiceArticle);
+                    decimal servicePrice = Convert.ToDecimal(getPriceCmd.ExecuteScalar());
+
+                    decimal totalPrice = servicePrice * participants;
+
+                    // Вставляем заказ
+                    string insertQuery = @"
+                INSERT INTO orders 
+                (ClientID, Article, DateOfAdmission, DueDate, StatusID, ParticipantsCount, TotalPrice, UserID, ScheduleID) 
+                VALUES 
+                (@ClientID, @Article, @DateOfAdmission, @DueDate, @StatusID, @ParticipantsCount, @TotalPrice, @UserID, @ScheduleID);
+                SELECT LAST_INSERT_ID();";
+
+                    MySqlCommand cmd = new MySqlCommand(insertQuery, conn);
+                    cmd.Parameters.AddWithValue("@ClientID", currentClientID);
+                    cmd.Parameters.AddWithValue("@Article", currentServiceArticle);
+                    cmd.Parameters.AddWithValue("@DateOfAdmission", dateTimePicker1.Value);
+                    cmd.Parameters.AddWithValue("@DueDate", dateTimePicker2.Value);
+                    cmd.Parameters.AddWithValue("@StatusID", 1);
+                    cmd.Parameters.AddWithValue("@ParticipantsCount", participants);
+                    cmd.Parameters.AddWithValue("@TotalPrice", totalPrice);
+                    cmd.Parameters.AddWithValue("@UserID", CurrentUser.UserID);
+                    cmd.Parameters.AddWithValue("@ScheduleID", scheduleID);
+
+                    int newOrderId = Convert.ToInt32(cmd.ExecuteScalar());
+
+                    // Обновляем количество занятых мест
+                    string updateSlotsQuery = @"
+                UPDATE schedule 
+                SET BookedSlots = BookedSlots + @Participants 
+                WHERE ScheduleID = @ScheduleID";
+
+                    MySqlCommand updateCmd = new MySqlCommand(updateSlotsQuery, conn);
+                    updateCmd.Parameters.AddWithValue("@Participants", participants);
+                    updateCmd.Parameters.AddWithValue("@ScheduleID", scheduleID);
+                    updateCmd.ExecuteNonQuery();
+
+                    MessageBox.Show($"Заказ №{newOrderId} успешно создан!\nОбщая стоимость: {totalPrice:C}",
+                        "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                    this.Hide();
+                    ViewingOrderManager viewOrderForm = new ViewingOrderManager(newOrderId);
+                    viewOrderForm.ShowDialog();
+                    this.Close();
+
+                    ClearForm();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Ошибка создания заказа: " + ex.Message, "Ошибка",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
+        }
 
-            // Создаем заказ
-            int newOrderId = 0;
-
-            try
+        /// <summary>
+        /// Отображение информации о свободных местах при выборе услуги и даты
+        /// </summary>
+        private void UpdateAvailableSlotsInfo()
+        {
+            using (MySqlConnection conn = new MySqlConnection(DatabaseConfig.ConnectionString))
             {
-                connection.Open();
+                try
+                {
+                    conn.Open();
 
-                // Получаем цену услуги
-                string getPriceQuery = "SELECT Price FROM services WHERE Article = @Article";
-                MySqlCommand getPriceCmd = new MySqlCommand(getPriceQuery, connection);
-                getPriceCmd.Parameters.AddWithValue("@Article", currentServiceArticle);
-                decimal servicePrice = Convert.ToDecimal(getPriceCmd.ExecuteScalar());
+                    int scheduleID = GetScheduleID(conn, currentServiceArticle, dateTimePicker2.Value);
 
-                // Рассчитываем общую цену
-                decimal totalPrice = servicePrice * participants;
+                    if (scheduleID > 0)
+                    {
+                        string query = @"
+                    SELECT MaxSlots, BookedSlots, StartTime 
+                    FROM schedule 
+                    WHERE ScheduleID = @ScheduleID";
 
-                // Вставляем заказ
-                string insertQuery = @"
-                    INSERT INTO orders 
-                    (ClientID, Article, DateOfAdmission, DueDate, StatusID, ParticipantsCount, TotalPrice, UserID) 
-                    VALUES 
-                    (@ClientID, @Article, @DateOfAdmission, @DueDate, @StatusID, @ParticipantsCount, @TotalPrice, @UserID)";
+                        MySqlCommand cmd = new MySqlCommand(query, conn);
+                        cmd.Parameters.AddWithValue("@ScheduleID", scheduleID);
 
-                MySqlCommand cmd = new MySqlCommand(insertQuery, connection);
-                cmd.Parameters.AddWithValue("@ClientID", currentClientID);
-                cmd.Parameters.AddWithValue("@Article", currentServiceArticle);
-                cmd.Parameters.AddWithValue("@DateOfAdmission", dateTimePicker1.Value);
-                cmd.Parameters.AddWithValue("@DueDate", dateTimePicker2.Value);
-                cmd.Parameters.AddWithValue("@StatusID", 1); // "В работе" 
-                cmd.Parameters.AddWithValue("@ParticipantsCount", participants);
-                cmd.Parameters.AddWithValue("@TotalPrice", totalPrice);
-                cmd.Parameters.AddWithValue("@UserID", CurrentUser.UserID); // Добавляем текущего пользователя
+                        using (MySqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                int maxSlots = Convert.ToInt32(reader["MaxSlots"]);
+                                int bookedSlots = Convert.ToInt32(reader["BookedSlots"]);
+                                int freeSlots = maxSlots - bookedSlots;
+                                DateTime startTime = Convert.ToDateTime(reader["StartTime"]);
 
-                cmd.ExecuteNonQuery();
+                                string message = $"Информация о сеансе:\n\n" +
+                                                $"Время начала: {startTime:HH:mm}\n" +
+                                                $"Всего мест: {maxSlots}\n" +
+                                                $"Занято мест: {bookedSlots}\n" +
+                                                $"Свободно мест: {freeSlots}";
 
-                // Получаем ID созданного заказа
-                newOrderId = (int)cmd.LastInsertedId;
+                                MessageBox.Show(message, "Информация о сеансе",
+                                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        string message = $"На выбранную дату ({dateTimePicker2.Value:dd.MM.yyyy}) " +
+                                        $"нет доступных сеансов для данной услуги.\n\n" +
+                                        $"Пожалуйста, выберите другую дату.";
 
-                MessageBox.Show($"Заказ №{newOrderId} успешно создан!\nОбщая стоимость: {totalPrice:C}",
-                    "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                // Открываем форму просмотра заказа с переданным ID
-                this.Visible = false;
-                ViewingOrderManager viewOrderForm = new ViewingOrderManager(newOrderId);
-                viewOrderForm.ShowDialog();
-                this.Visible = true;
-
-                ClearForm();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Ошибка создания заказа: " + ex.Message, "Ошибка",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                if (connection.State == ConnectionState.Open)
-                    connection.Close();
+                        MessageBox.Show(message, "Нет сеансов",
+                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка проверки сеансов: {ex.Message}", "Ошибка",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 
@@ -890,10 +946,10 @@ namespace prototip
         /// </summary>
         private void button1_Click(object sender, EventArgs e)
         {
-            this.Visible = false;
+            this.Hide();
             Clients auto = new Clients();
             auto.ShowDialog();
-            this.Visible = true;
+            this.Close();
         }
 
         #region Обработчики для поля количества человек

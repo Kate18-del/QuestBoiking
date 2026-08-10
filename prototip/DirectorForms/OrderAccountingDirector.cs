@@ -337,9 +337,6 @@ namespace prototip
             // Сброс фильтров
             button1.Click += btnReset_Click;
 
-            // Кнопка меню (возврат в главное меню)
-            btnMenu.Click += btnMenu_Click;
-
             // Кнопка формирования отчета в Excel
             button2.Click += btnGenerateReport_Click;
 
@@ -533,6 +530,55 @@ namespace prototip
         }
 
         /// <summary>
+        /// Добавление гистограммы выручки по квестам
+        /// </summary>
+        /// <summary>
+        /// Добавление гистограммы выручки по квестам
+        /// </summary>
+        private void AddRevenueBarChart(Excel.Worksheet worksheet, int startRow)
+        {
+            var questRevenue = filteredOrders
+                .GroupBy(o => o.QuestName)
+                .Select(g => new { Quest = g.Key, Revenue = g.Sum(o => o.TotalPrice ?? 0) })
+                .OrderByDescending(g => g.Revenue)
+                .ToList();
+
+            worksheet.Cells[startRow, 1] = "Выручка по квестам";
+            worksheet.Range[worksheet.Cells[startRow, 1], worksheet.Cells[startRow, 2]].Merge();
+            worksheet.Cells[startRow, 1].Font.Bold = true;
+            worksheet.Cells[startRow, 1].Font.Size = 12;
+
+            worksheet.Cells[startRow + 1, 1] = "Квест";
+            worksheet.Cells[startRow + 1, 2] = "Выручка (руб.)";
+
+            int dataRow = startRow + 2;
+            foreach (var item in questRevenue)
+            {
+                worksheet.Cells[dataRow, 1] = item.Quest;
+                worksheet.Cells[dataRow, 2] = item.Revenue;
+                worksheet.Cells[dataRow, 2].NumberFormat = "#,##0";
+                dataRow++;
+            }
+
+            // Размещение диаграммы в колонке L
+            Excel.Range chartPosition = worksheet.Range["L7"];
+            Excel.ChartObjects chartObjects = (Excel.ChartObjects)worksheet.ChartObjects();
+            Excel.ChartObject chartObject = chartObjects.Add(
+                (double)chartPosition.Left,
+                (double)chartPosition.Top,
+                500,
+                300);
+            Excel.Chart chart = chartObject.Chart;
+
+            Excel.Range dataRange = worksheet.Range[worksheet.Cells[startRow + 1, 1], worksheet.Cells[dataRow - 1, 2]];
+            chart.SetSourceData(dataRange);
+            chart.ChartType = Excel.XlChartType.xlColumnClustered;
+            chart.HasTitle = true;
+            chart.ChartTitle.Text = "Выручка по квестам";
+            chart.HasLegend = false;
+        }
+
+        /// <summary>
         /// Обработчик кнопки формирования отчета в Excel
         /// </summary>
         private void btnGenerateReport_Click(object sender, EventArgs e)
@@ -581,6 +627,7 @@ namespace prototip
             {
                 // Создание нового приложения Excel
                 excelApp = new Excel.Application();
+                excelApp.Visible = false; // Сначала скрываем
                 workbook = excelApp.Workbooks.Add();
                 worksheet = workbook.ActiveSheet;
 
@@ -616,7 +663,7 @@ namespace prototip
 
                 // Заголовки колонок
                 string[] headers = { "№ заказа", "Дата приема", "Срок исполнения", "Клиент", "Телефон",
-                           "Квест", "Статус", "Кол-во чел.", "Сумма", "Менеджер" };
+                   "Квест", "Статус", "Кол-во чел.", "Сумма", "Менеджер" };
 
                 for (int i = 0; i < headers.Length; i++)
                 {
@@ -631,12 +678,9 @@ namespace prototip
                 foreach (var order in filteredOrders)
                 {
                     worksheet.Cells[row, 1] = order.ID;
-
-                    // ДАТА ПРИЕМА - как строка в правильном формате
                     worksheet.Cells[row, 2] = order.DateOfAdmission.ToString("dd.MM.yyyy HH:mm");
-                    worksheet.Cells[row, 2].NumberFormat = "@"; // Текстовый формат
+                    worksheet.Cells[row, 2].NumberFormat = "@";
 
-                    // СРОК ИСПОЛНЕНИЯ - как строка
                     if (order.DueDate.HasValue)
                     {
                         worksheet.Cells[row, 3] = order.DueDate.Value.ToString("dd.MM.yyyy HH:mm");
@@ -645,7 +689,7 @@ namespace prototip
                     {
                         worksheet.Cells[row, 3] = "";
                     }
-                    worksheet.Cells[row, 3].NumberFormat = "@"; // Текстовый формат
+                    worksheet.Cells[row, 3].NumberFormat = "@";
 
                     worksheet.Cells[row, 4] = order.ClientName;
                     worksheet.Cells[row, 5] = order.PhoneNumber;
@@ -655,35 +699,28 @@ namespace prototip
                     worksheet.Cells[row, 9] = order.TotalPrice ?? 0;
                     worksheet.Cells[row, 10] = order.ManagerName;
 
-                    // Форматирование для суммы
                     if (order.TotalPrice.HasValue)
                     {
                         worksheet.Cells[row, 9].NumberFormat = "#,##0\" руб.\"";
                     }
-
-                    // Форматирование для колонки с количеством людей
                     worksheet.Cells[row, 8].NumberFormat = "0";
 
                     row++;
                 }
 
                 // Настройка ширины колонок
-                worksheet.Columns.AutoFit(); // Автоподбор ширины
+                worksheet.Columns.AutoFit();
+                worksheet.Columns[2].ColumnWidth = 15;
+                worksheet.Columns[3].ColumnWidth = 15;
+                worksheet.Columns[4].ColumnWidth = 20;
+                worksheet.Columns[5].ColumnWidth = 12;
+                worksheet.Columns[6].ColumnWidth = 20;
+                worksheet.Columns[7].ColumnWidth = 10;
+                worksheet.Columns[8].ColumnWidth = 10;
+                worksheet.Columns[9].ColumnWidth = 12;
+                worksheet.Columns[10].ColumnWidth = 25;
 
-                // Ручная установка ширины для колонок с датами
-                worksheet.Columns[2].ColumnWidth = 15; // Дата приема
-                worksheet.Columns[3].ColumnWidth = 15; // Срок исполнения
-
-                // Ручная установка ширины для других колонок
-                worksheet.Columns[4].ColumnWidth = 20; // Клиент
-                worksheet.Columns[5].ColumnWidth = 12; // Телефон
-                worksheet.Columns[6].ColumnWidth = 20; // Квест
-                worksheet.Columns[7].ColumnWidth = 10; // Статус
-                worksheet.Columns[8].ColumnWidth = 10; // Кол-во чел.
-                worksheet.Columns[9].ColumnWidth = 12; // Сумма
-                worksheet.Columns[10].ColumnWidth = 15; // Менеджер
-
-                // Добавление границ для области данных
+                // Добавление границ
                 Excel.Range dataRange = worksheet.Range[worksheet.Cells[7, 1], worksheet.Cells[row - 1, 10]];
                 dataRange.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
 
@@ -691,25 +728,39 @@ namespace prototip
                 worksheet.Application.ActiveWindow.SplitRow = 7;
                 worksheet.Application.ActiveWindow.FreezePanes = true;
 
+                int chartStartRow = row + 2;
+
+                // Диаграмма 1: Выручка по квестам
+                AddRevenueBarChart(worksheet, chartStartRow);
+
                 // Сохранение файла
                 workbook.SaveAs(filePath);
-            }
-            finally
-            {
-                // Освобождение ресурсов COM-объектов
-                if (workbook != null)
-                {
-                    workbook.Close(false);
-                }
-                if (excelApp != null)
-                {
-                    excelApp.Quit();
-                }
 
-                // Очистка COM-объектов для предотвращения утечек памяти
+                // Закрываем книгу
+                workbook.Close(false);
+                excelApp.Quit();
+
+                // Освобождаем ресурсы
                 System.Runtime.InteropServices.Marshal.ReleaseComObject(worksheet);
                 System.Runtime.InteropServices.Marshal.ReleaseComObject(workbook);
                 System.Runtime.InteropServices.Marshal.ReleaseComObject(excelApp);
+
+                // ОТКРЫВАЕМ СОХРАНЕННЫЙ ФАЙЛ
+                System.Diagnostics.Process.Start(filePath);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при экспорте в Excel: {ex.Message}", "Ошибка",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+                // Освобождение ресурсов в случае ошибки
+                if (worksheet != null) System.Runtime.InteropServices.Marshal.ReleaseComObject(worksheet);
+                if (workbook != null) System.Runtime.InteropServices.Marshal.ReleaseComObject(workbook);
+                if (excelApp != null)
+                {
+                    excelApp.Quit();
+                    System.Runtime.InteropServices.Marshal.ReleaseComObject(excelApp);
+                }
             }
         }
 
@@ -730,10 +781,10 @@ namespace prototip
         /// </summary>
         private void btnMenu_Click(object sender, EventArgs e)
         {
-            this.Visible = false;
+            this.Hide();
             MainDirector auto = new MainDirector();
             auto.ShowDialog();
-            this.Visible = true;
+            this.Close();
         }
     }
 }

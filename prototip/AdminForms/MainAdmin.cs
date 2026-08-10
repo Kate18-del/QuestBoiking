@@ -1,9 +1,11 @@
-﻿using System;
+﻿using MySql.Data.MySqlClient;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Configuration;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Reflection.Emit;
 using System.Text;
@@ -29,7 +31,75 @@ namespace prototip
             DisplayCurrentUser();
 
             InitializeInactivityTracker();
-;
+            // Авто-бэкап при выходе
+            this.FormClosing += MainForm_FormClosing;
+            this.FormClosed += MainForm_FormClosed;
+            ;
+        }
+
+
+        /// <summary>
+        /// Авто-бэкап при закрытии формы
+        /// </summary>
+        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            string autoBackupEnabled = ConfigurationManager.AppSettings["AutoBackupEnabled"];
+            if (autoBackupEnabled?.ToLower() == "true")
+            {
+                try
+                {
+                    string folder = Path.Combine(Application.StartupPath, "AutoBackups");
+                    Directory.CreateDirectory(folder);
+                    string filePath = Path.Combine(folder, $"auto_backup_{DateTime.Now:yyyyMMdd_HHmm}.sql");
+
+                    using (MySqlConnection conn = new MySqlConnection(DatabaseConfig.ConnectionString))
+                    {
+                        conn.Open();
+                        DataTable tables = conn.GetSchema("Tables");
+
+                        using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
+                        {
+                            writer.BaseStream.Write(new byte[] { 0xEF, 0xBB, 0xBF }, 0, 3);
+                            writer.WriteLine("/*!40101 SET NAMES utf8mb4 */;");
+                            writer.WriteLine("/*!40101 SET FOREIGN_KEY_CHECKS=0 */;");
+                            writer.WriteLine($"\n-- Auto-backup: {DateTime.Now}\n");
+
+                            foreach (DataRow row in tables.Rows)
+                            {
+                                string tn = row["TABLE_NAME"].ToString();
+                                using (MySqlDataReader r = new MySqlCommand($"SHOW CREATE TABLE `{tn}`", conn).ExecuteReader())
+                                    if (r.Read()) { writer.WriteLine($"DROP TABLE IF EXISTS `{tn}`;\n{r.GetString(1)};\n"); }
+
+                                DataTable schema = new DataTable();
+                                new MySqlDataAdapter($"SELECT * FROM `{tn}` LIMIT 0", conn).Fill(schema);
+                                var cols = schema.Columns.Cast<DataColumn>().Where(c => c.DataType != typeof(byte[])).Select(c => c.ColumnName).ToList();
+                                if (cols.Count == 0) continue;
+
+                                using (MySqlDataReader r = new MySqlCommand($"SELECT `{string.Join("`, `", cols)}` FROM `{tn}`", conn).ExecuteReader())
+                                    while (r.Read())
+                                    {
+                                        var vals = cols.Select(c => r.IsDBNull(r.GetOrdinal(c)) ? "NULL" : $"'{r.GetValue(r.GetOrdinal(c)).ToString().Replace("\\", "\\\\").Replace("'", "\\'")}'").ToList();
+                                        writer.WriteLine($"INSERT INTO `{tn}` (`{string.Join("`, `", cols)}`) VALUES ({string.Join(", ", vals)});");
+                                    }
+                                writer.WriteLine();
+                            }
+                            writer.WriteLine("/*!40101 SET FOREIGN_KEY_CHECKS=1 */;");
+                        }
+                    }
+
+                    // Удаляем старые (оставляем 5)
+                    var files = new DirectoryInfo(folder).GetFiles("auto_backup_*.sql").OrderByDescending(f => f.CreationTime).Skip(5);
+                    foreach (var f in files) f.Delete();
+                }
+                catch { }
+            }
+        }
+
+        private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
+        {
+
+                Application.Exit();
+
         }
 
         /// <summary>
@@ -66,11 +136,16 @@ namespace prototip
             // Останавливаем трекер
             inactivityTracker.Stop();
 
+            // ПОКАЗЫВАЕМ СООБЩЕНИЕ О БЛОКИРОВКЕ
+            MessageBox.Show(
+                "Система заблокирована из-за длительного бездействия.\n" +
+                "Пожалуйста, авторизуйтесь снова для продолжения работы.",
+                "Блокировка системы",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+
             // Запоминаем текущую форму
             Autorisation.LastActiveForm = this;
-
-            // Скрываем текущую форму
-            this.Visible = false;
 
             // Создаем форму авторизации
             Autorisation authForm = new Autorisation();
@@ -88,18 +163,6 @@ namespace prototip
             authForm.ShowDialog();
         }
 
-        protected override void OnFormClosing(FormClosingEventArgs e)
-        {
-            inactivityTracker?.Stop();
-            base.OnFormClosing(e);
-        }
-
-        protected override void OnActivated(EventArgs e)
-        {
-            base.OnActivated(e);
-            inactivityTracker?.Start();
-        }
-
 
         /// <summary>
         /// Обработчик кнопки выхода из системы
@@ -107,15 +170,13 @@ namespace prototip
         /// </summary>
         private void btnExit_Click(object sender, EventArgs e)
         {
-            // Скрываем текущую форму администратора
-            this.Visible = false;
-
+            inactivityTracker?.Stop();
+            this.Hide();
             // Создаем и открываем форму авторизации
             Autorisation auto = new Autorisation();
             auto.ShowDialog();
-
-            // После закрытия формы авторизации снова показываем форму администратора
-            this.Visible = true;
+            this.Close();
+            inactivityTracker?.Start();
         }
 
         /// <summary>
@@ -124,15 +185,15 @@ namespace prototip
         /// </summary>
         private void btnUsers_Click(object sender, EventArgs e)
         {
-            // Скрываем текущую форму
-            this.Visible = false;
-
+            inactivityTracker?.Stop();
+            this.Hide();
             // Создаем и открываем форму управления пользователями
             Users auto = new Users();
             auto.ShowDialog();
 
-            // После закрытия формы управления пользователями возвращаемся в главное меню
-            this.Visible = true;
+            this.Close();
+
+            inactivityTracker?.Start();
         }
 
         /// <summary>
@@ -141,15 +202,14 @@ namespace prototip
         /// </summary>
         private void btnOrders_Click(object sender, EventArgs e)
         {
-            // Скрываем текущую форму
-            this.Visible = false;
-
+            inactivityTracker?.Stop();
+            this.Hide();
             // Создаем и открываем форму учета заказов (для администратора)
             OrderAccountingAdmin auto = new OrderAccountingAdmin();
             auto.ShowDialog();
+            this.Close();
 
-            // После закрытия формы учета заказов возвращаемся в главное меню
-            this.Visible = true;
+            inactivityTracker?.Start();
         }
 
         /// <summary>
@@ -158,46 +218,24 @@ namespace prototip
         /// </summary>
         private void btnBooks_Click(object sender, EventArgs e)
         {
-            // Скрываем текущую форму
-            this.Visible = false;
-
+            inactivityTracker?.Stop();
+            this.Hide();
             // Создаем и открываем форму справочников (для администратора)
             ReferenceBooksAdmin auto = new ReferenceBooksAdmin();
             auto.ShowDialog();
-
-            // После закрытия формы справочников возвращаемся в главное меню
-            this.Visible = true;
+            this.Close();
+            inactivityTracker?.Start();  
         }
 
-        private void BtnSettings_Click(object sender, EventArgs e)
+        private void button1_Click(object sender, EventArgs e)
         {
-            using (SettingsForm settingsForm = new SettingsForm())
-            {
-                // Останавливаем трекер на время настроек
-                inactivityTracker?.Stop();
-
-                if (settingsForm.ShowDialog() == DialogResult.OK)
-                {
-                    // Если настройки сохранены, обновляем трекер
-                    string timeout = ConfigurationManager.AppSettings["InactivityTimeoutSeconds"];
-                    if (!string.IsNullOrEmpty(timeout) && int.TryParse(timeout, out int seconds))
-                    {
-                        inactivityTracker?.UpdateTimeout(seconds);
-                    }
-
-                    string enabled = ConfigurationManager.AppSettings["EnableAutoLock"];
-                    if (!string.IsNullOrEmpty(enabled) && bool.TryParse(enabled, out bool isEnabled))
-                    {
-                        inactivityTracker?.SetEnabled(isEnabled);
-                    }
-
-                    MessageBox.Show("Настройки применены!", "Успех",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-
-                // Возобновляем трекер
-                inactivityTracker?.Start();
-            }
+            inactivityTracker?.Stop();
+            this.Hide();
+            // Создаем и открываем форму справочников (для администратора)
+            StatisticsAdmin auto = new StatisticsAdmin();
+            auto.ShowDialog();
+            this.Close();
+            inactivityTracker?.Start();
         }
     }
 }

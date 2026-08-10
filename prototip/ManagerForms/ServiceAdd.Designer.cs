@@ -52,7 +52,7 @@
             // 
             // textBox4
             // 
-            this.textBox4.Font = new System.Drawing.Font("Comic Sans MS", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.textBox4.Font = new System.Drawing.Font("Comic Sans MS", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.textBox4.ForeColor = System.Drawing.SystemColors.ScrollBar;
             this.textBox4.Location = new System.Drawing.Point(6, 55);
             this.textBox4.MaxLength = 200;
@@ -65,68 +65,70 @@
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Font = new System.Drawing.Font("Comic Sans MS", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.label4.Location = new System.Drawing.Point(4, 319);
+            this.label4.Font = new System.Drawing.Font("Comic Sans MS", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.label4.Location = new System.Drawing.Point(379, 324);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(111, 20);
+            this.label4.Size = new System.Drawing.Size(68, 26);
             this.label4.TabIndex = 71;
-            this.label4.Text = "День недели -";
+            this.label4.Text = "Дата: ";
+            this.label4.Visible = false;
             // 
             // dateTimePicker2
             // 
-            this.dateTimePicker2.Font = new System.Drawing.Font("Comic Sans MS", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.dateTimePicker2.Location = new System.Drawing.Point(68, 319);
+            this.dateTimePicker2.Font = new System.Drawing.Font("Comic Sans MS", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.dateTimePicker2.Location = new System.Drawing.Point(488, 320);
             this.dateTimePicker2.Name = "dateTimePicker2";
-            this.dateTimePicker2.Size = new System.Drawing.Size(197, 26);
+            this.dateTimePicker2.Size = new System.Drawing.Size(270, 34);
             this.dateTimePicker2.TabIndex = 70;
+            this.dateTimePicker2.Visible = false;
             // 
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Font = new System.Drawing.Font("Comic Sans MS", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.label3.Location = new System.Drawing.Point(2, 281);
+            this.label3.Font = new System.Drawing.Font("Comic Sans MS", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.label3.Location = new System.Drawing.Point(379, 279);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(53, 20);
+            this.label3.Size = new System.Drawing.Size(74, 26);
             this.label3.TabIndex = 69;
-            this.label3.Text = "Время";
+            this.label3.Text = "Время:";
             // 
             // dateTimePicker1
             // 
-            this.dateTimePicker1.Font = new System.Drawing.Font("Comic Sans MS", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.dateTimePicker1.Location = new System.Drawing.Point(111, 277);
+            this.dateTimePicker1.Font = new System.Drawing.Font("Comic Sans MS", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.dateTimePicker1.Location = new System.Drawing.Point(488, 273);
             this.dateTimePicker1.Name = "dateTimePicker1";
-            this.dateTimePicker1.Size = new System.Drawing.Size(150, 26);
+            this.dateTimePicker1.Size = new System.Drawing.Size(270, 34);
             this.dateTimePicker1.TabIndex = 68;
             // 
             // textBox2
             // 
-            this.textBox2.Font = new System.Drawing.Font("Comic Sans MS", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.textBox2.Font = new System.Drawing.Font("Comic Sans MS", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.textBox2.ForeColor = System.Drawing.SystemColors.ScrollBar;
             this.textBox2.Location = new System.Drawing.Point(6, 12);
             this.textBox2.MaxLength = 100;
             this.textBox2.Name = "textBox2";
-            this.textBox2.Size = new System.Drawing.Size(240, 26);
+            this.textBox2.Size = new System.Drawing.Size(240, 34);
             this.textBox2.TabIndex = 67;
             this.textBox2.Text = "Наименование";
             // 
             // textBox1
             // 
-            this.textBox1.Font = new System.Drawing.Font("Comic Sans MS", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.textBox1.Font = new System.Drawing.Font("Comic Sans MS", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.textBox1.ForeColor = System.Drawing.SystemColors.ScrollBar;
             this.textBox1.Location = new System.Drawing.Point(6, 222);
             this.textBox1.MaxLength = 5;
             this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(240, 26);
+            this.textBox1.Size = new System.Drawing.Size(240, 34);
             this.textBox1.TabIndex = 73;
             this.textBox1.Text = "Цена";
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Font = new System.Drawing.Font("Comic Sans MS", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.label1.Font = new System.Drawing.Font("Comic Sans MS", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.label1.Location = new System.Drawing.Point(256, 227);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(32, 18);
+            this.label1.Size = new System.Drawing.Size(46, 26);
             this.label1.TabIndex = 74;
             this.label1.Text = "руб.";
             // 
@@ -134,8 +136,8 @@
             // 
             this.button2.BackColor = System.Drawing.SystemColors.GradientInactiveCaption;
             this.button2.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
-            this.button2.Font = new System.Drawing.Font("Comic Sans MS", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.button2.Location = new System.Drawing.Point(461, 222);
+            this.button2.Font = new System.Drawing.Font("Comic Sans MS", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.button2.Location = new System.Drawing.Point(537, 222);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(149, 35);
             this.button2.TabIndex = 76;
@@ -145,43 +147,43 @@
             // comboBox1
             // 
             this.comboBox1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.comboBox1.Font = new System.Drawing.Font("Comic Sans MS", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.comboBox1.Font = new System.Drawing.Font("Comic Sans MS", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.comboBox1.ForeColor = System.Drawing.SystemColors.ScrollBar;
             this.comboBox1.FormattingEnabled = true;
-            this.comboBox1.Location = new System.Drawing.Point(419, 280);
+            this.comboBox1.Location = new System.Drawing.Point(6, 279);
             this.comboBox1.Name = "comboBox1";
-            this.comboBox1.Size = new System.Drawing.Size(240, 25);
+            this.comboBox1.Size = new System.Drawing.Size(259, 34);
             this.comboBox1.TabIndex = 77;
             // 
             // comboBox2
             // 
             this.comboBox2.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.comboBox2.Font = new System.Drawing.Font("Comic Sans MS", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.comboBox2.Font = new System.Drawing.Font("Comic Sans MS", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.comboBox2.ForeColor = System.Drawing.SystemColors.ScrollBar;
             this.comboBox2.FormattingEnabled = true;
-            this.comboBox2.Location = new System.Drawing.Point(419, 318);
+            this.comboBox2.Location = new System.Drawing.Point(6, 319);
             this.comboBox2.Name = "comboBox2";
-            this.comboBox2.Size = new System.Drawing.Size(240, 25);
+            this.comboBox2.Size = new System.Drawing.Size(259, 34);
             this.comboBox2.TabIndex = 78;
             // 
             // comboBox3
             // 
             this.comboBox3.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.comboBox3.Font = new System.Drawing.Font("Comic Sans MS", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.comboBox3.Font = new System.Drawing.Font("Comic Sans MS", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.comboBox3.ForeColor = System.Drawing.SystemColors.ScrollBar;
             this.comboBox3.FormattingEnabled = true;
-            this.comboBox3.Location = new System.Drawing.Point(419, 359);
+            this.comboBox3.Location = new System.Drawing.Point(6, 359);
             this.comboBox3.Name = "comboBox3";
-            this.comboBox3.Size = new System.Drawing.Size(240, 25);
+            this.comboBox3.Size = new System.Drawing.Size(259, 34);
             this.comboBox3.TabIndex = 79;
             // 
             // textBox3
             // 
-            this.textBox3.Font = new System.Drawing.Font("Comic Sans MS", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.textBox3.Font = new System.Drawing.Font("Comic Sans MS", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.textBox3.ForeColor = System.Drawing.SystemColors.ScrollBar;
-            this.textBox3.Location = new System.Drawing.Point(6, 400);
+            this.textBox3.Location = new System.Drawing.Point(518, 375);
             this.textBox3.Name = "textBox3";
-            this.textBox3.Size = new System.Drawing.Size(240, 26);
+            this.textBox3.Size = new System.Drawing.Size(240, 34);
             this.textBox3.TabIndex = 80;
             this.textBox3.Text = "Артикул";
             // 
@@ -189,22 +191,22 @@
             // 
             this.button1.BackColor = System.Drawing.SystemColors.GradientInactiveCaption;
             this.button1.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
-            this.button1.Font = new System.Drawing.Font("Comic Sans MS", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.button1.Location = new System.Drawing.Point(12, 464);
+            this.button1.Font = new System.Drawing.Font("Comic Sans MS", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.button1.Location = new System.Drawing.Point(12, 474);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(149, 35);
             this.button1.TabIndex = 81;
-            this.button1.Text = "Добавить";
+            this.button1.Text = "Сохранить";
             this.button1.UseVisualStyleBackColor = false;
             // 
             // btnMenu
             // 
             this.btnMenu.BackColor = System.Drawing.SystemColors.GradientInactiveCaption;
             this.btnMenu.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
-            this.btnMenu.Font = new System.Drawing.Font("Comic Sans MS", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.btnMenu.Location = new System.Drawing.Point(419, 464);
+            this.btnMenu.Font = new System.Drawing.Font("Comic Sans MS", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.btnMenu.Location = new System.Drawing.Point(483, 474);
             this.btnMenu.Name = "btnMenu";
-            this.btnMenu.Size = new System.Drawing.Size(240, 35);
+            this.btnMenu.Size = new System.Drawing.Size(259, 35);
             this.btnMenu.TabIndex = 82;
             this.btnMenu.Text = "На форму просмотра";
             this.btnMenu.UseVisualStyleBackColor = false;
@@ -213,7 +215,7 @@
             // pictureBox2
             // 
             this.pictureBox2.Image = global::prototip.Properties.Resources.logo;
-            this.pictureBox2.Location = new System.Drawing.Point(633, 12);
+            this.pictureBox2.Location = new System.Drawing.Point(692, 12);
             this.pictureBox2.Name = "pictureBox2";
             this.pictureBox2.Size = new System.Drawing.Size(78, 71);
             this.pictureBox2.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
@@ -225,7 +227,7 @@
             this.pictureBox1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pictureBox1.ErrorImage = null;
             this.pictureBox1.Image = global::prototip.Properties.Resources.zagl1;
-            this.pictureBox1.Location = new System.Drawing.Point(461, 12);
+            this.pictureBox1.Location = new System.Drawing.Point(537, 12);
             this.pictureBox1.Name = "pictureBox1";
             this.pictureBox1.Size = new System.Drawing.Size(149, 193);
             this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
@@ -237,7 +239,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Window;
-            this.ClientSize = new System.Drawing.Size(723, 521);
+            this.ClientSize = new System.Drawing.Size(770, 521);
             this.Controls.Add(this.pictureBox2);
             this.Controls.Add(this.btnMenu);
             this.Controls.Add(this.button1);

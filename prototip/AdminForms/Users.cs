@@ -60,6 +60,8 @@ namespace prototip
 
             // Очистка полей ввода (установка плейсхолдеров)
             ClearFormFields();
+
+            textBox4.PasswordChar = '\0';
         }
 
         /// <summary>
@@ -68,7 +70,6 @@ namespace prototip
         /// </summary>
         private void ClearFormFields()
         {
-            // Установка плейсхолдеров для текстовых полей
             textBox2.Text = "ФИО";
             textBox2.ForeColor = SystemColors.GrayText;
 
@@ -77,11 +78,13 @@ namespace prototip
 
             textBox4.Text = "Пароль";
             textBox4.ForeColor = SystemColors.GrayText;
-            textBox4.PasswordChar = '\0'; // Без звездочек для подсказки
+            textBox4.PasswordChar = '\0'; 
 
-            // Сброс выпадающего списка ролей
             comboBox3.SelectedIndex = -1;
             comboBox3.Text = "Роль";
+
+            selectedUser = null;
+            button3.Enabled = false;
 
             // Сброс выбранного пользователя и отключение кнопки редактирования
             selectedUser = null;
@@ -141,7 +144,7 @@ namespace prototip
         /// </summary>
         private void LoadRoles()
         {
-            comboBox3.Items.AddRange(new[] { "Администратор", "Директор", "Менеджер" });
+            comboBox3.Items.AddRange(new[] { "Администратор", "Менеджер" });
         }
 
         /// <summary>
@@ -177,10 +180,8 @@ namespace prototip
         {
             // Подписка на события
             dataGridView1.SelectionChanged += DataGridView1_SelectionChanged;
-            button2.Click += btnAdd_Click;
-            button3.Click += btnEdit_Click;
             dataGridView1.KeyDown += DataGridView1_KeyDown;
-            button1.Click += button1_Click;
+
 
             // Обработчик ввода в поле ФИО с валидацией и автоформатированием
             textBox2.KeyPress += (s, e) =>
@@ -208,39 +209,25 @@ namespace prototip
 
         /// <summary>
         /// Обработчик получения фокуса текстовым полем
-        /// Очищает поле от плейсхолдера и настраивает отображение
         /// </summary>
-        /// <param name="textBox">Текстовое поле</param>
-        /// <param name="placeholder">Текст плейсхолдера</param>
         private void TextBoxEnter(TextBox textBox, string placeholder)
         {
             if (textBox.Text == placeholder)
             {
                 textBox.Text = "";
                 textBox.ForeColor = SystemColors.WindowText;
-
-                // Для поля пароля включаем маскирование звездочками
-                if (placeholder == "Пароль")
-                    textBox4.PasswordChar = '*';
             }
         }
 
         /// <summary>
         /// Обработчик потери фокуса текстовым полем
-        /// Восстанавливает плейсхолдер если поле пустое
         /// </summary>
-        /// <param name="textBox">Текстовое поле</param>
-        /// <param name="placeholder">Текст плейсхолдера</param>
         private void TextBoxLeave(TextBox textBox, string placeholder)
         {
             if (string.IsNullOrWhiteSpace(textBox.Text))
             {
                 textBox.Text = placeholder;
                 textBox.ForeColor = SystemColors.GrayText;
-
-                // Для поля пароля отключаем маскирование
-                if (placeholder == "Пароль")
-                    textBox4.PasswordChar = '\0';
             }
         }
 
@@ -254,32 +241,30 @@ namespace prototip
             {
                 selectedUser = user;
 
-                // Форматируем ФИО для корректного отображения
+                // ФИО
                 string formattedFIO = UserValidator.FormatFIO(user.FIO);
                 textBox2.Text = formattedFIO;
                 textBox2.ForeColor = SystemColors.WindowText;
 
-                // Отображаем логин
+                // Логин
                 textBox3.Text = user.Login;
                 textBox3.ForeColor = SystemColors.WindowText;
 
-                // Отображаем пароль (с маскированием)
-                textBox4.Text = user.Password;
-                textBox4.ForeColor = SystemColors.WindowText;
-                textBox4.PasswordChar = '*';
+                // Пароль - показываем плейсхолдер вместо хеша
+                textBox4.Text = "Пароль";
+                textBox4.ForeColor = SystemColors.GrayText;
+                textBox4.PasswordChar = '\0';
 
-                // Устанавливаем соответствующую роль в выпадающем списке
+                // Роль
                 if (selectedUser.IDRole >= 1 && selectedUser.IDRole <= 3)
                 {
                     comboBox3.SelectedIndex = selectedUser.IDRole - 1;
                 }
 
-                // Включаем кнопку редактирования
                 button3.Enabled = true;
             }
             else
             {
-                // Если выделение снято, очищаем поля
                 ClearFormFields();
             }
         }
@@ -332,24 +317,42 @@ namespace prototip
                 textBox2.Text = UserValidator.FormatFIO(textBox2.Text);
             }
 
-            // Валидация формы
-            if (!UserValidator.ValidateForm(textBox2, textBox3, textBox4, comboBox3))
+            // Особая валидация для редактирования (пароль может быть пустым)
+            if (string.IsNullOrWhiteSpace(textBox2.Text) || textBox2.Text == "ФИО")
+            {
+                MessageBox.Show("Введите ФИО пользователя!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
+            }
+
+            if (string.IsNullOrWhiteSpace(textBox3.Text) || textBox3.Text == "Логин")
+            {
+                MessageBox.Show("Введите логин пользователя!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            if (comboBox3.SelectedIndex == -1)
+            {
+                MessageBox.Show("Выберите роль пользователя!", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
 
             try
             {
+                // Если пароль не изменен (оставлен плейсхолдер), передаем пустую строку
+                string newPassword = (textBox4.Text == "Пароль" || string.IsNullOrWhiteSpace(textBox4.Text))
+                                    ? ""
+                                    : textBox4.Text;
+
                 // Обновление данных пользователя через сервис
                 if (_userService.UpdateUser(
                     selectedUser.UserID,              // ID пользователя
                     textBox3.Text.Trim(),             // Новый логин
-                    textBox4.Text,                     // Новый пароль
+                    newPassword,                      // Новый пароль (может быть пустым)
                     textBox2.Text.Trim(),              // Новое ФИО
                     comboBox3.SelectedIndex + 1,       // Новая роль
                     selectedUser.Password))            // Старый пароль (для проверки изменений)
                 {
                     MessageBox.Show("Данные пользователя успешно обновлены!", "Успех");
-
-                    // Очистка полей и обновление списка
                     ClearFormFields();
                     LoadUsers();
                 }
@@ -466,10 +469,10 @@ namespace prototip
         /// </summary>
         private void btnMenu_Click(object sender, EventArgs e)
         {
-            this.Visible = false;
+            this.Hide();
             MainAdmin auto = new MainAdmin();
             auto.ShowDialog();
-            this.Visible = true;
+            this.Close();
         }
 
         /// <summary>

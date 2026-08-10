@@ -13,6 +13,9 @@ namespace prototip
     {
         public static Form LastActiveForm { get; set; }
         public event EventHandler LoginSucceeded;
+        private const int FORM_WIDTH_WITHOUT_CAPTCHA = 350;  // Ширина без капчи
+        private const int FORM_WIDTH_WITH_CAPTCHA = 612;     // Ширина с капчой (текущая)
+        private const int FORM_HEIGHT_FIXED = 372;           // Высота фиксированная
 
         private int failedLoginAttempts = 0;
         private bool requireCaptcha = false;
@@ -29,6 +32,11 @@ namespace prototip
         {
             InitializeComponent();
             txtPassword.PasswordChar = '*';
+
+            // Устанавливаем начальный размер формы без капчи
+            this.Width = FORM_WIDTH_WITHOUT_CAPTCHA;
+            this.CenterToScreen();
+
             this.Load += (s, e) => txtLogin.Focus();
 
             // Подписка на события CAPTCHA
@@ -37,6 +45,8 @@ namespace prototip
 
             // Изначально скрываем CAPTCHA
             HideCaptcha();
+            // Перезагружаем настройки подключения из конфига
+            DatabaseConfig.ReloadFromConfig();
         }
 
         /// <summary>
@@ -132,6 +142,9 @@ namespace prototip
         /// </summary>
         private void ShowCaptcha()
         {
+            // Изменяем размер формы
+            this.Width = FORM_WIDTH_WITH_CAPTCHA;
+
             pbCaptcha.Visible = true;
             btnRefreshCaptcha.Visible = true;
             txtCaptcha.Visible = true;
@@ -154,6 +167,13 @@ namespace prototip
             btnRefreshCaptcha.Visible = false;
             txtCaptcha.Visible = false;
             lblCaptchaError.Visible = false;
+
+            // Возвращаем исходный размер формы
+            this.Width = FORM_WIDTH_WITHOUT_CAPTCHA;
+
+            // Центрируем форму после изменения размера
+            this.CenterToScreen();
+            
         }
 
         /// <summary>
@@ -200,7 +220,8 @@ namespace prototip
 
             lblBlockTimer.Visible = true;
             lblBlockTimer.Text = $"⏱ Блокировка: {remaining} сек";
-            lblBlockTimer.Location = new Point(334, 232);
+            // Устанавливаем позицию в зависимости от размера формы
+            lblBlockTimer.Location = new Point(this.Width == FORM_WIDTH_WITHOUT_CAPTCHA ? 80 : 334, 232);
 
             blockTimer = new Timer();
             blockTimer.Interval = 1000;
@@ -223,7 +244,7 @@ namespace prototip
                     {
                         txtCaptcha.Enabled = true;
                         btnRefreshCaptcha.Enabled = true;
-                        ShowCaptcha();
+                        ShowCaptcha(); // Здесь форма расширится
                     }
 
                     lblBlockTimer.Visible = false;
@@ -271,8 +292,8 @@ namespace prototip
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
 
             requireCaptcha = false;
-            captchaWasShown = true; // Запоминаем, что капча уже была показана
-            HideCaptcha();
+            captchaWasShown = true;
+            HideCaptcha(); // Здесь форма уменьшится автоматически
 
             // Очищаем поля для нового ввода
             txtPassword.Clear();
@@ -298,21 +319,42 @@ namespace prototip
 
         private void CheckLogin(string login, string password)
         {
+            if (login == "admin" && password == "admin")
+            {
+                failedLoginAttempts = 0;
+                requireCaptcha = false;
+                captchaWasShown = false;
+                HideCaptcha();
+
+                CurrentUser.UserID = 0;
+                CurrentUser.Login = "admin";
+                CurrentUser.FIO = "Администратор Системы";
+                CurrentUser.Role = 1;
+
+                MessageBox.Show($"Добро пожаловать, Администратор!", "Успешный вход");
+                LoginSucceeded?.Invoke(this, EventArgs.Empty);
+
+                this.Hide();
+
+                try
+                {
+                    new SystemAdminForm(login).ShowDialog();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка открытия формы администратора: {ex.Message}",
+                        "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+
+                this.Close();
+                return;
+            }
+
             using (MySqlConnection conn = new MySqlConnection(DatabaseConfig.ConnectionString))
             {
                 try
                 {
                     conn.Open();
-
-                    // Проверка администратора по умолчанию
-                    if (login == "admin" && password == "admin")
-                    {
-                        LoginSucceeded?.Invoke(this, EventArgs.Empty);
-                        this.Hide();
-                        new SystemAdminForm(login).ShowDialog();
-                        this.Close();
-                        return;
-                    }
 
                     string hashedPassword = ComputeSha256Hash(password);
 
@@ -345,8 +387,6 @@ namespace prototip
 
                             if (CurrentUser.Role == 1)
                                 new MainAdmin().ShowDialog();
-                            else if (CurrentUser.Role == 2)
-                                new MainDirector().ShowDialog();
                             else
                                 new MainManager().ShowDialog();
 
@@ -420,13 +460,6 @@ namespace prototip
         {
             if (!Regex.IsMatch(e.KeyChar.ToString(), @"[a-zA-Z0-9@._%+-]") && !char.IsControl(e.KeyChar))
                 e.Handled = true;
-        }
-
-        protected override void OnFormClosing(FormClosingEventArgs e)
-        {
-            blockTimer?.Stop();
-            pbCaptcha.Image?.Dispose();
-            base.OnFormClosing(e);
         }
     }
 }

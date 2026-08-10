@@ -19,11 +19,11 @@ namespace prototip
     /// </summary>
     public partial class ServiceAdd : Form
     {
-        // Для хранения изображения в памяти (массив байт)
         private byte[] imageData = null;
 
-        // Имя файла изображения
-        private string imageFileName = null;
+        // Режим работы формы
+        private bool isEditMode = false;
+        private int editingArticle = 0;
 
         /// <summary>
         /// Конструктор формы добавления услуги
@@ -36,6 +36,21 @@ namespace prototip
             // Загрузка справочных данных из БД
             LoadDataFromDatabase();
         }
+
+        /// <summary>
+        /// Конструктор для редактирования существующей услуги
+        /// </summary>
+        public ServiceAdd(int article) : this()
+        {
+            isEditMode = true;
+            editingArticle = article;
+            LoadServiceData(article);
+
+            // Меняем заголовок и кнопку
+            this.Text = "Редактирование услуги";
+            button1.Text = "Сохранить";
+        }
+
 
         /// <summary>
         /// Инициализация элементов формы и настройка обработчиков событий
@@ -77,10 +92,6 @@ namespace prototip
             // Обработчики для кнопок
             button1.Click += ButtonAdd_Click;      // Добавление услуги
             button2.Click += ButtonSelectImage_Click; // Выбор изображения
-
-            // Установка текста меток
-            label3.Text = "Время:";
-            label4.Text = "Дата:";
         }
 
         /// <summary>
@@ -100,6 +111,110 @@ namespace prototip
             }
         }
 
+        /// <summary>
+        /// Загрузка данных услуги для редактирования
+        /// </summary>
+        private void LoadServiceData(int article)
+        {
+            try
+            {
+                using (MySqlConnection conn = new MySqlConnection(DatabaseConfig.ConnectionString))
+                {
+                    conn.Open();
+                    string query = @"
+                SELECT 
+                    Name, Description, Price, Time, DayOfTheWeek, 
+                    MaxPeople, ISLevel, IDCategory, Picture
+                FROM services 
+                WHERE Article = @Article";
+
+                    MySqlCommand cmd = new MySqlCommand(query, conn);
+                    cmd.Parameters.AddWithValue("@Article", article);
+
+                    using (MySqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            textBox2.Text = reader["Name"].ToString();
+                            textBox2.ForeColor = Color.Black;
+
+                            textBox4.Text = reader["Description"] != DBNull.Value ? reader["Description"].ToString() : "";
+                            textBox4.ForeColor = Color.Black;
+
+                            textBox1.Text = reader["Price"].ToString();
+                            textBox1.ForeColor = Color.Black;
+
+                            // Время
+                            int totalMinutes = Convert.ToInt32(reader["Time"]);
+                            int hours = totalMinutes / 60;
+                            int minutes = totalMinutes % 60;
+                            dateTimePicker1.Value = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, hours, minutes, 0);
+
+                            // DayOfTheWeek (исправлено)
+                            int dayOfWeek = reader["DayOfTheWeek"] != DBNull.Value ? Convert.ToInt32(reader["DayOfTheWeek"]) : 30;
+                            if (dayOfWeek != 30)
+                            {
+                                DateTime nearestDate = GetNextDayOfWeek(DateTime.Now, dayOfWeek);
+                                dateTimePicker2.Value = nearestDate;
+                            }
+
+                            // Категория
+                            int idCategory = Convert.ToInt32(reader["IDCategory"]);
+                            for (int i = 0; i < comboBox1.Items.Count; i++)
+                            {
+                                if (((ComboBoxItem)comboBox1.Items[i]).Value == idCategory)
+                                {
+                                    comboBox1.SelectedIndex = i;
+                                    break;
+                                }
+                            }
+
+                            // Сложность
+                            int isLevel = Convert.ToInt32(reader["ISLevel"]);
+                            for (int i = 0; i < comboBox2.Items.Count; i++)
+                            {
+                                if (((ComboBoxItem)comboBox2.Items[i]).Value == isLevel)
+                                {
+                                    comboBox2.SelectedIndex = i;
+                                    break;
+                                }
+                            }
+
+                            // Макс. человек
+                            int maxPeople = Convert.ToInt32(reader["MaxPeople"]);
+                            for (int i = 0; i < comboBox3.Items.Count; i++)
+                            {
+                                if (((ComboBoxItem)comboBox3.Items[i]).Value == maxPeople)
+                                {
+                                    comboBox3.SelectedIndex = i;
+                                    break;
+                                }
+                            }
+
+                            // Изображение
+                            if (reader["Picture"] != DBNull.Value)
+                            {
+                                imageData = (byte[])reader["Picture"];
+                                using (MemoryStream ms = new MemoryStream(imageData))
+                                {
+                                    pictureBox1.Image = Image.FromStream(ms);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка загрузки данных услуги: {ex.Message}", "Ошибка");
+            }
+        }
+        private DateTime GetNextDayOfWeek(DateTime startDate, int targetDayOfWeek)
+        {
+            int daysToAdd = ((targetDayOfWeek - (int)startDate.DayOfWeek + 7) % 7);
+            if (daysToAdd == 0) daysToAdd = 0; // Сегодня
+            return startDate.AddDays(daysToAdd);
+        }
         /// <summary>
         /// Загрузка категорий из базы данных в выпадающий список
         /// </summary>
@@ -265,38 +380,27 @@ namespace prototip
                     {
                         string imagePath = openFileDialog.FileName;
 
-                        // Проверяем размер файла (максимум 2MB)
-                        FileInfo fileInfo = new FileInfo(imagePath);
-                        if (fileInfo.Length > 2 * 1024 * 1024)
+                        // Читаем файл
+                        byte[] newImageData = File.ReadAllBytes(imagePath);
+
+                        // Сжимаем если больше 3MB
+                        long maxSize = 3 * 1024 * 1024;
+                        if (newImageData.Length > maxSize)
                         {
-                            MessageBox.Show("Размер файла не должен превышать 2MB", "Ошибка");
-                            return;
+                            newImageData = CompressImage(newImageData, maxSize);
+                            MessageBox.Show($"Изображение было сжато до {newImageData.Length / 1024}KB", "Сжатие");
                         }
 
-                        // ПРОВЕРКА НА ДУБЛИКАТ
-                        if (IsImageDuplicate(imagePath))
+                        // Сохраняем
+                        imageData = newImageData;
+
+                        // Показываем в PictureBox
+                        using (MemoryStream ms = new MemoryStream(imageData))
                         {
-                            // Если дубликат найден, но пользователь согласился использовать существующий файл,
-                            // imageFileName уже обновлен в IsImageDuplicate
-                            if (!string.IsNullOrEmpty(imageFileName))
-                            {
-                                // Изображение уже загружено в IsImageDuplicate
-                                return;
-                            }
-                            else
-                            {
-                                // Пользователь отказался от дубликата
-                                return;
-                            }
+                            pictureBox1.Image = Image.FromStream(ms);
                         }
 
-                        // Если дубликат не найден, загружаем новое изображение
-                        imageData = File.ReadAllBytes(imagePath);
-                        imageFileName = Path.GetFileName(imagePath);
-
-                        // Загружаем изображение в PictureBox
-                        pictureBox1.Image = System.Drawing.Image.FromFile(imagePath);
-                        MessageBox.Show("Новое изображение успешно загружено!", "Успех");
+                        MessageBox.Show("Изображение успешно загружено!", "Успех");
                     }
                     catch (Exception ex)
                     {
@@ -304,6 +408,97 @@ namespace prototip
                     }
                 }
             }
+        }
+
+
+        /// <summary>
+        /// Сжатие изображения до указанного максимального размера в байтах
+        /// </summary>
+        private byte[] CompressImage(byte[] imageData, long maxSizeBytes = 2 * 1024 * 1024)
+        {
+            // Если изображение уже меньше максимального размера - возвращаем как есть
+            if (imageData.Length <= maxSizeBytes)
+                return imageData;
+
+            using (MemoryStream ms = new MemoryStream(imageData))
+            {
+                using (Image originalImage = Image.FromStream(ms))
+                {
+                    // Начинаем с качества 90%
+                    long quality = 90;
+                    byte[] compressedData;
+
+                    do
+                    {
+                        compressedData = CompressImageWithQuality(originalImage, quality);
+                        quality -= 10; // Уменьшаем качество на 10%
+                    }
+                    while (compressedData.Length > maxSizeBytes && quality > 10);
+
+                    // Если все еще больше - уменьшаем размер изображения
+                    if (compressedData.Length > maxSizeBytes)
+                    {
+                        compressedData = ResizeImage(originalImage, maxSizeBytes);
+                    }
+
+                    return compressedData;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Сжатие с указанным качеством
+        /// </summary>
+        private byte[] CompressImageWithQuality(Image image, long quality)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                // Настройка кодировщика JPEG
+                System.Drawing.Imaging.ImageCodecInfo jpegCodec =
+                    System.Drawing.Imaging.ImageCodecInfo.GetImageEncoders()
+                    .First(c => c.MimeType == "image/jpeg");
+
+                System.Drawing.Imaging.EncoderParameters encoderParams =
+                    new System.Drawing.Imaging.EncoderParameters(1);
+                encoderParams.Param[0] = new System.Drawing.Imaging.EncoderParameter(
+                    System.Drawing.Imaging.Encoder.Quality, quality);
+
+                image.Save(ms, jpegCodec, encoderParams);
+                return ms.ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Уменьшение размеров изображения
+        /// </summary>
+        private byte[] ResizeImage(Image image, long maxSizeBytes)
+        {
+            int width = image.Width;
+            int height = image.Height;
+            byte[] result;
+
+            do
+            {
+                width = (int)(width * 0.8);
+                height = (int)(height * 0.8);
+
+                using (Bitmap resized = new Bitmap(width, height))
+                {
+                    using (Graphics g = Graphics.FromImage(resized))
+                    {
+                        g.DrawImage(image, 0, 0, width, height);
+                    }
+
+                    using (MemoryStream ms = new MemoryStream())
+                    {
+                        resized.Save(ms, System.Drawing.Imaging.ImageFormat.Jpeg);
+                        result = ms.ToArray();
+                    }
+                }
+            }
+            while (result.Length > maxSizeBytes && width > 100);
+
+            return result;
         }
 
         /// <summary>
@@ -314,108 +509,126 @@ namespace prototip
         {
             try
             {
-                // ПРОВЕРКА ОБЯЗАТЕЛЬНЫХ ПОЛЕЙ
+                // Валидация
                 if (string.IsNullOrWhiteSpace(textBox2.Text) || textBox2.Text == "Наименование")
                 {
                     MessageBox.Show("Введите наименование услуги", "Ошибка");
                     return;
                 }
 
-                // Проверка цены
                 if (!decimal.TryParse(textBox1.Text, out decimal price) || price <= 0)
                 {
-                    MessageBox.Show("Введите корректную цену (положительное число)", "Ошибка");
+                    MessageBox.Show("Введите корректную цену", "Ошибка");
                     return;
                 }
 
-                // Проверка на русские буквы в наименовании и описании
                 if (!IsRussianText(textBox2.Text) && textBox2.Text != "Наименование")
                 {
-                    MessageBox.Show("В наименовании можно использовать только русские буквы, цифры и знаки препинания", "Ошибка");
+                    MessageBox.Show("В наименовании можно использовать только русские буквы", "Ошибка");
                     return;
                 }
 
-                if (!string.IsNullOrWhiteSpace(textBox4.Text) && textBox4.Text != "Описание" && !IsRussianText(textBox4.Text))
-                {
-                    MessageBox.Show("В описании можно использовать только русские буквы, цифры и знаки препинания", "Ошибка");
-                    return;
-                }
-
-                // Проверка выбора значений в выпадающих списках
                 if (comboBox1.SelectedItem == null || comboBox2.SelectedItem == null || comboBox3.SelectedItem == null)
                 {
                     MessageBox.Show("Выберите значения из всех выпадающих списков", "Ошибка");
                     return;
                 }
 
-                // Получаем ID выбранных значений
                 int categoryId = ((ComboBoxItem)comboBox1.SelectedItem).Value;
                 int difficultyId = ((ComboBoxItem)comboBox2.SelectedItem).Value;
                 int maxPeople = ((ComboBoxItem)comboBox3.SelectedItem).Value;
-
-                // Время в минутах
                 int timeInMinutes = dateTimePicker1.Value.Hour * 60 + dateTimePicker1.Value.Minute;
-
-                // DayOfTheWeek - день месяца (1-31) для определения дня проведения
                 int dayOfTheWeek = dateTimePicker2.Value.Day;
+                string description = textBox4.Text == "Описание" ? "" : textBox4.Text;
 
-                // Сохранение услуги в базу данных (артикул будет автоинкрементом)
-                int newArticle = SaveServiceToDatabase(textBox2.Text,
-                    textBox4.Text == "Описание" ? "" : textBox4.Text,
-                    price, timeInMinutes, dayOfTheWeek, maxPeople, difficultyId, categoryId);
-
-                // Если есть изображение - сохраняем его
-                if (imageData != null && newArticle > 0)
+                if (isEditMode)
                 {
-                    UpdateServiceImage(newArticle);
+                    UpdateService(editingArticle, textBox2.Text, description, price, timeInMinutes, dayOfTheWeek, maxPeople, difficultyId, categoryId, imageData);
+                    MessageBox.Show("Услуга успешно обновлена!", "Успех");
+                }
+                else
+                {
+                    int newArticle = SaveServiceToDatabase(textBox2.Text, description, price, timeInMinutes, dayOfTheWeek, maxPeople, difficultyId, categoryId, imageData);
+                    MessageBox.Show($"Услуга успешно добавлена! Артикул: {newArticle}", "Успех");
                 }
 
-                MessageBox.Show($"Услуга успешно добавлена! Артикул: {newArticle}", "Успех");
-                ClearForm(); // Очистка формы после успешного добавления
+                ClearForm();
+                this.DialogResult = DialogResult.OK; 
+                this.Close();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка при добавлении услуги: {ex.Message}", "Ошибка");
+                MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка");
             }
         }
 
         /// <summary>
-        /// Проверка, содержит ли текст только русские буквы и допустимые символы
+        /// Обновление существующей услуги
         /// </summary>
-        /// <param name="text">Проверяемый текст</param>
-        /// <returns>true если текст допустим, false в противном случае</returns>
-        private bool IsRussianText(string text)
-        {
-            if (string.IsNullOrWhiteSpace(text)) return true;
-
-            // Проверяем каждый символ
-            foreach (char c in text)
-            {
-                if (char.IsLetter(c))
-                {
-                    // Проверяем, русская ли это буква
-                    if (!((c >= 'А' && c <= 'я') || c == 'Ё' || c == 'ё'))
-                    {
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
-
-        /// <summary>
-        /// Сохранение услуги в базу данных
-        /// </summary>
-        /// <returns>Артикул созданной услуги</returns>
-        private int SaveServiceToDatabase(string name, string description, decimal price,
-                                          int time, int dayOfTheWeek, int maxPeople,
-                                          int difficultyId, int categoryId)
+        private void UpdateService(int article, string name, string description, decimal price,
+                                   int time, int dayOfTheWeek, int maxPeople,
+                                   int difficultyId, int categoryId, byte[] imageData)
         {
             using (MySqlConnection conn = new MySqlConnection(DatabaseConfig.ConnectionString))
             {
                 conn.Open();
 
-                // Добавляем новую запись (артикул автоинкремент)
+                string query = @"UPDATE services SET 
+                    Name = @name, 
+                    Description = @description, 
+                    Price = @price, 
+                    Time = @time, 
+                    DayOfTheWeek = @dayOfTheWeek, 
+                    MaxPeople = @maxPeople, 
+                    ISLevel = @difficultyId, 
+                    IDCategory = @categoryId, 
+                    Picture = @picture 
+                    WHERE Article = @article";
+
+                using (MySqlCommand cmd = new MySqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@name", name);
+                    cmd.Parameters.AddWithValue("@description", description);
+                    cmd.Parameters.AddWithValue("@price", price);
+                    cmd.Parameters.AddWithValue("@time", time);
+                    cmd.Parameters.AddWithValue("@dayOfTheWeek", dayOfTheWeek);
+                    cmd.Parameters.AddWithValue("@maxPeople", maxPeople);
+                    cmd.Parameters.AddWithValue("@difficultyId", difficultyId);
+                    cmd.Parameters.AddWithValue("@categoryId", categoryId);
+                    cmd.Parameters.AddWithValue("@article", article);
+
+                    if (imageData != null && imageData.Length > 0)
+                        cmd.Parameters.AddWithValue("@picture", imageData);
+                    else
+                        cmd.Parameters.AddWithValue("@picture", DBNull.Value);
+
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        private bool IsRussianText(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return true;
+            foreach (char c in text)
+            {
+                if (char.IsLetter(c))
+                {
+                    if (!((c >= 'А' && c <= 'я') || c == 'Ё' || c == 'ё'))
+                        return false;
+                }
+            }
+            return true;
+        }
+
+        private int SaveServiceToDatabase(string name, string description, decimal price,
+                                          int time, int dayOfTheWeek, int maxPeople,
+                                          int difficultyId, int categoryId, byte[] imageData)
+        {
+            using (MySqlConnection conn = new MySqlConnection(DatabaseConfig.ConnectionString))
+            {
+                conn.Open();
+
                 string insertQuery = @"INSERT INTO services 
                          (Name, Description, Price, Time, DayOfTheWeek, MaxPeople, ISLevel, IDCategory, Picture) 
                          VALUES 
@@ -433,111 +646,15 @@ namespace prototip
                     cmd.Parameters.AddWithValue("@difficultyId", difficultyId);
                     cmd.Parameters.AddWithValue("@categoryId", categoryId);
 
-                    // Если есть изображение, сохраняем имя файла, иначе null
-                    if (!string.IsNullOrEmpty(imageFileName))
-                    {
-                        // Здесь мы не можем сгенерировать уникальное имя, так как еще нет артикула
-                        // Поэтому сохраняем оригинальное имя, а потом обновим его в UpdateServiceImage
-                        cmd.Parameters.AddWithValue("@picture", "temp_" + imageFileName);
-                    }
+                    if (imageData != null && imageData.Length > 0)
+                        cmd.Parameters.AddWithValue("@picture", imageData);
                     else
-                    {
                         cmd.Parameters.AddWithValue("@picture", DBNull.Value);
-                    }
 
-                    // Выполняем запрос и получаем новый артикул
-                    int newArticle = Convert.ToInt32(cmd.ExecuteScalar());
-                    return newArticle;
+                    return Convert.ToInt32(cmd.ExecuteScalar());
                 }
             }
         }
-
-        /// <summary>
-        /// Обновление изображения услуги в базе данных и сохранение файла на диск
-        /// </summary>
-        /// <param name="article">Артикул услуги</param>
-        private void UpdateServiceImage(int article)
-        {
-            try
-            {
-                if (imageData == null || string.IsNullOrEmpty(imageFileName))
-                    return;
-
-                using (MySqlConnection conn = new MySqlConnection(DatabaseConfig.ConnectionString))
-                {
-                    conn.Open();
-
-                    // Формируем уникальное имя файла
-                    string extension = Path.GetExtension(imageFileName);
-                    string uniqueFileName = $"service_{article}_{DateTime.Now:yyyyMMddHHmmssfff}{extension}";
-
-                    // Сохраняем изображение в AppData
-                    SaveImageToDisk(uniqueFileName, imageData);
-
-                    // Обновляем запись в БД
-                    string query = "UPDATE services SET Picture = @picture WHERE Article = @article";
-
-                    using (MySqlCommand cmd = new MySqlCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@picture", uniqueFileName);
-                        cmd.Parameters.AddWithValue("@article", article);
-
-                        int rowsAffected = cmd.ExecuteNonQuery();
-
-                        if (rowsAffected > 0)
-                        {
-                            // Обновляем pictureBox на форме, чтобы показать сохраненное изображение
-                            string savedPath = GetImagePath(uniqueFileName);
-                            if (File.Exists(savedPath))
-                            {
-                                pictureBox1.Image = System.Drawing.Image.FromFile(savedPath);
-                            }
-                            MessageBox.Show("Изображение успешно сохранено!", "Успех");
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ошибка сохранения изображения: {ex.Message}", "Ошибка");
-            }
-        }
-
-
-        /// <summary>
-        /// Сохраняет изображение на диск в папку AppData
-        /// </summary>
-        private void SaveImageToDisk(string fileName, byte[] imageData)
-        {
-            try
-            {
-                string imagesFolder = GetImagesFolderPath();
-                string fullPath = Path.Combine(imagesFolder, fileName);
-
-                File.WriteAllBytes(fullPath, imageData);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Ошибка сохранения изображения: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Получение пути к папке для хранения изображений в AppData
-        /// </summary>
-        private string GetImagesFolderPath()
-        {
-            string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            string appFolder = Path.Combine(appDataPath, "QuestManager", "Images");
-
-            if (!Directory.Exists(appFolder))
-            {
-                Directory.CreateDirectory(appFolder);
-            }
-
-            return appFolder;
-        }
-
         /// <summary>
         /// Очистка формы после успешного добавления
         /// </summary>
@@ -567,7 +684,6 @@ namespace prototip
             // Сбрасываем изображение на стандартное
             pictureBox1.Image = global::prototip.Properties.Resources.zagl1;
             imageData = null;
-            imageFileName = null;
         }
 
         /// <summary>
@@ -575,129 +691,57 @@ namespace prototip
         /// </summary>
         private void btnMenu_Click(object sender, EventArgs e)
         {
-            this.Visible = false;
+            // Проверяем, были ли внесены изменения в форму
+            bool hasChanges = false;
+
+            // Проверяем текстовые поля
+            if ((!string.IsNullOrWhiteSpace(textBox2.Text) && textBox2.Text != "Наименование" && textBox2.ForeColor == Color.Black) ||
+                (!string.IsNullOrWhiteSpace(textBox4.Text) && textBox4.Text != "Описание" && textBox4.ForeColor == Color.Black) ||
+                (!string.IsNullOrWhiteSpace(textBox1.Text) && textBox1.Text != "Цена" && textBox1.ForeColor == Color.Black))
+            {
+                hasChanges = true;
+            }
+
+            // Проверяем, загружено ли изображение
+            if (imageData != null)
+            {
+                hasChanges = true;
+            }
+
+            // Если есть изменения, показываем предупреждение
+            if (hasChanges)
+            {
+                DialogResult result = MessageBox.Show(
+                    "Внимание! Все несохраненные данные будут утеряны.\nВы действительно хотите выйти?",
+                    "Подтверждение выхода",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning);
+
+                if (result == DialogResult.No)
+                {
+                    return; // Отменяем выход
+                }
+            }
+
+            // Если изменений нет или пользователь подтвердил выход
+            this.Hide();
             ServicesManager auto = new ServicesManager();
             auto.ShowDialog();
-            this.Visible = true;
+            this.Close();
         }
 
         /// <summary>
-        /// Проверка, является ли выбранное изображение дубликатом существующего
+        /// Вычисление хеша массива байтов (MD5)
         /// </summary>
-        /// <param name="imagePath">Путь к выбранному изображению</param>
-        /// <returns>true если дубликат найден</returns>
-        private bool IsImageDuplicate(string imagePath)
-        {
-            try
-            {
-                // Вычисляем хеш нового файла (MD5)
-                string newFileHash = ComputeFileHash(imagePath);
-
-                // Получаем размер нового файла
-                FileInfo newFileInfo = new FileInfo(imagePath);
-                long newFileSize = newFileInfo.Length;
-
-                using (MySqlConnection conn = new MySqlConnection(DatabaseConfig.ConnectionString))
-                {
-                    conn.Open();
-
-                    // Получаем все существующие изображения
-                    string query = "SELECT Article, Picture FROM services WHERE Picture IS NOT NULL";
-
-                    using (MySqlCommand cmd = new MySqlCommand(query, conn))
-                    using (MySqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            string existingFileName = reader["Picture"].ToString();
-                            int existingArticle = Convert.ToInt32(reader["Article"]);
-
-                            if (string.IsNullOrEmpty(existingFileName))
-                                continue;
-
-                            // Получаем путь к существующему файлу
-                            string existingFilePath = GetImagePath(existingFileName);
-
-                            if (File.Exists(existingFilePath))
-                            {
-                                // Сравниваем размеры для быстрой проверки
-                                FileInfo existingFileInfo = new FileInfo(existingFilePath);
-
-                                if (existingFileInfo.Length == newFileSize)
-                                {
-                                    // Если размеры совпадают, сравниваем хеши
-                                    string existingFileHash = ComputeFileHash(existingFilePath);
-
-                                    if (existingFileHash == newFileHash)
-                                    {
-                                        // Нашли дубликат - просто показываем сообщение
-                                        MessageBox.Show(
-                                            $"Это изображение уже используется для услуги с артикулом {existingArticle}.\n" +
-                                            $"Пожалуйста, выберите другое изображение.",
-                                            "Обнаружен дубликат",
-                                            MessageBoxButtons.OK,
-                                            MessageBoxIcon.Warning);
-
-                                        return true; // Дубликат найден
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                return false; // Дубликат не найден
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ошибка при проверке дубликатов: {ex.Message}", "Ошибка");
-                return false; // В случае ошибки разрешаем добавление
-            }
-        }
-
-        /// <summary>
-        /// Вычисление хеша файла (MD5)
-        /// </summary>
-        /// <param name="filePath">Путь к файлу</param>
-        /// <returns>Хеш файла в виде строки</returns>
-        private string ComputeFileHash(string filePath)
+        /// <param name="data">Массив байтов</param>
+        /// <returns>Хеш в виде строки</returns>
+        private string ComputeByteArrayHash(byte[] data)
         {
             using (var md5 = System.Security.Cryptography.MD5.Create())
             {
-                using (var stream = File.OpenRead(filePath))
-                {
-                    byte[] hashBytes = md5.ComputeHash(stream);
-                    return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
-                }
+                byte[] hashBytes = md5.ComputeHash(data);
+                return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
             }
-        }
-
-        /// <summary>
-        /// Получение пути к изображению по имени файла
-        /// </summary>
-        /// <param name="fileName">Имя файла</param>
-        /// <returns>Полный путь к файлу или null</returns>
-        private string GetImagePath(string fileName)
-        {
-            if (string.IsNullOrEmpty(fileName))
-                return null;
-
-            // 1. Сначала проверяем в AppData
-            string appDataPath = Path.Combine(GetImagesFolderPath(), fileName);
-            if (File.Exists(appDataPath))
-                return appDataPath;
-
-            // 2. Затем проверяем в папке приложения (для обратной совместимости)
-            string appPath = Path.Combine(Application.StartupPath, "Images", fileName);
-            if (File.Exists(appPath))
-                return appPath;
-
-            // 3. Проверяем в текущей директории
-            string currentPath = Path.Combine(Environment.CurrentDirectory, "Images", fileName);
-            if (File.Exists(currentPath))
-                return currentPath;
-
-            return null;
         }
     }
 

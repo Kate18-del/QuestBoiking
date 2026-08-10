@@ -436,10 +436,10 @@ namespace prototip
         /// </summary>
         private void btnMenu_Click(object sender, EventArgs e)
         {
-            this.Visible = false;
+            this.Hide();
             MainDirector auto = new MainDirector();
             auto.ShowDialog();
-            this.Visible = true;
+            this.Close();
         }
 
         /// <summary>

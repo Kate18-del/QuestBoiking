@@ -16,36 +16,23 @@ namespace prototip
     /// </summary>
     public partial class Clients : Form
     {
-        // Коллекция для привязки к DataGridView с поддержкой уведомлений об изменениях
         private BindingList<Client> allClients;
-
-        // Список для поиска и фильтрации (без привязки)
         private List<Client> clientsList;
-
-        // Репозиторий для работы с данными клиентов в БД
         private ClientRepository clientRepository;
-
-        // Текущий выбранный клиент в таблице
         private Client selectedClient;
 
-        /// <summary>
-        /// Конструктор формы управления клиентами
-        /// </summary>
+        // Для поиска
+        private List<int> foundIndexes = new List<int>();
+        private int currentFoundIndex = -1;
+
         public Clients()
         {
             InitializeComponent();
-            // Инициализация репозитория
             clientRepository = new ClientRepository();
-            // Настройка всех элементов формы
             InitializeForm();
-            // Отображение информации о текущем менеджере
             DisplayCurrentUser();
         }
 
-        /// <summary>
-        /// Отображение информации о текущем менеджере
-        /// Формирует краткое ФИО в формате "Фамилия И.О."
-        /// </summary>
         private void DisplayCurrentUser()
         {
             if (CurrentUser.FIO != null)
@@ -56,57 +43,33 @@ namespace prototip
             }
         }
 
-        /// <summary>
-        /// Инициализация всех элементов формы
-        /// </summary>
         private void InitializeForm()
         {
-            // Настройка таблицы для отображения клиентов
             ConfigureDataGridView();
-
-            // Настройка валидации ввода
             ConfigureInputValidation();
-
-            // Загрузка списка клиентов
             LoadClients();
-
-            // Подписка на события
             SubscribeToEvents();
-
-            // Очистка полей ввода (установка плейсхолдеров)
             ClearFormFields();
         }
 
-        /// <summary>
-        /// Настройка столбцов DataGridView для отображения информации о клиентах
-        /// </summary>
         private void ConfigureDataGridView()
         {
-            // Отключаем автоматическую генерацию столбцов
             dataGridView1.AutoGenerateColumns = false;
-
-            // Настройка режимов отображения
-            dataGridView1.ReadOnly = true;           // Только для чтения
-            dataGridView1.AllowUserToAddRows = false; // Запрет добавления строк
-            dataGridView1.SelectionMode = DataGridViewSelectionMode.FullRowSelect; // Выделение всей строки
-
-            // Установка шрифта
+            dataGridView1.ReadOnly = true;
+            dataGridView1.AllowUserToAddRows = false;
+            dataGridView1.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             this.dataGridView1.DefaultCellStyle.Font = new Font("Comic Sans MS", 9);
-
-            // Очистка существующих столбцов
             dataGridView1.Columns.Clear();
 
-            // ID клиента (скрытая колонка для хранения идентификатора)
             dataGridView1.Columns.Add(new DataGridViewTextBoxColumn()
             {
                 Name = "ClientID",
                 HeaderText = "ClientID",
                 DataPropertyName = "ClientID",
                 Width = 170,
-                Visible = false, // Скрываем от пользователя
+                Visible = false,
             });
 
-            // Фамилия
             dataGridView1.Columns.Add(new DataGridViewTextBoxColumn()
             {
                 Name = "LastName",
@@ -115,7 +78,6 @@ namespace prototip
                 Width = 170
             });
 
-            // Имя
             dataGridView1.Columns.Add(new DataGridViewTextBoxColumn()
             {
                 Name = "FirstName",
@@ -124,7 +86,6 @@ namespace prototip
                 Width = 170
             });
 
-            // Отчество
             dataGridView1.Columns.Add(new DataGridViewTextBoxColumn()
             {
                 Name = "Surname",
@@ -133,7 +94,6 @@ namespace prototip
                 Width = 150
             });
 
-            // Номер телефона
             dataGridView1.Columns.Add(new DataGridViewTextBoxColumn()
             {
                 Name = "PhoneNumber",
@@ -142,7 +102,6 @@ namespace prototip
                 Width = 170
             });
 
-            // Возраст
             dataGridView1.Columns.Add(new DataGridViewTextBoxColumn()
             {
                 Name = "Age",
@@ -152,105 +111,53 @@ namespace prototip
             });
         }
 
-        /// <summary>
-        /// Настройка валидации ввода для текстовых полей
-        /// Использует статические методы из ClientValidator
-        /// </summary>
         private void ConfigureInputValidation()
         {
-            // Поля ФИО - только русские буквы
             textBox2.KeyPress += (s, e) => ClientValidator.ValidateRussianInput(e);
             textBox1.KeyPress += (s, e) => ClientValidator.ValidateRussianInput(e);
             textBox5.KeyPress += (s, e) => ClientValidator.ValidateRussianInput(e);
-
-            // Поле возраста - только цифры
             textBox4.KeyPress += (s, e) => ClientValidator.ValidateDigitInput(e);
         }
 
-        /// <summary>
-        /// Загрузка всех активных клиентов из базы данных
-        /// Применяет фильтрацию для скрытия "удаленных" записей
-        /// </summary>
         private void LoadClients()
         {
             try
             {
-                Console.WriteLine("=== Начало загрузки клиентов ===");
-
-                // 1. Получаем ВСЕХ клиентов из БД (включая помеченных как удаленные)
                 var allClientsFromDb = clientRepository.GetAllClients();
-                Console.WriteLine($"Всего клиентов в БД: {allClientsFromDb.Count}");
-
-                // 2. Получаем список ID клиентов, которые были удалены (но физически остались в БД)
                 var deletedIds = DeletedRecordsManager.GetDeletedClientIds();
-                Console.WriteLine($"Удаленных ID найдено: {deletedIds.Count}");
-                if (deletedIds.Count > 0)
-                {
-                    Console.WriteLine($"Удаленные ID: {string.Join(", ", deletedIds)}");
-                }
-
-                // 3. Фильтруем: оставляем только НЕ удаленных клиентов
                 var activeClients = allClientsFromDb
                     .Where(c => !deletedIds.Contains(c.ClientID))
                     .ToList();
 
-                Console.WriteLine($"Будет показано активных клиентов: {activeClients.Count}");
-
-                // 4. Логируем для проверки фильтрации
-                foreach (var client in allClientsFromDb)
-                {
-                    if (deletedIds.Contains(client.ClientID))
-                    {
-                        Console.WriteLine($"Клиент ID {client.ClientID} {client.LastName} должен быть скрыт");
-                    }
-                }
-
-                // 5. Сохраняем в оба списка для разных целей
-                clientsList = activeClients; // Для поиска
-                allClients = new BindingList<Client>(activeClients); // Для привязки
-
-                // 6. Обновляем DataSource (сначала очищаем для корректного обновления)
+                clientsList = activeClients;
+                allClients = new BindingList<Client>(activeClients);
                 dataGridView1.DataSource = null;
                 dataGridView1.DataSource = allClients;
-
-                // 7. Обновляем счетчик записей
                 UpdateRecordCount();
-
-                // 8. Снимаем выделение и сбрасываем выбранного клиента
                 dataGridView1.ClearSelection();
                 selectedClient = null;
                 btnEdit.Enabled = false;
-
-                Console.WriteLine("=== Загрузка клиентов завершена ===\n");
+                foundIndexes.Clear();
+                currentFoundIndex = -1;
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка загрузки клиентов: {ex.Message}\n{ex.StackTrace}",
-                    "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Ошибка загрузки клиентов: {ex.Message}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        /// <summary>
-        /// Подписка на все события формы
-        /// </summary>
         private void SubscribeToEvents()
         {
-            // Поиск при изменении текста
-            textBox6.TextChanged += OnSearchTextChanged;
-
-            // Кнопки
+            textBox6.TextChanged += TextBox6_TextChanged;
+            textBox6.KeyDown += TextBox6_KeyDown;
             btnAdd.Click += btnAdd_Click;
             btnEdit.Click += btnEdit_Click;
             btnClear.Click += btnClear_Click;
             button1.Click += btnReset_Click;
             btnMenu.Click += btnMenu_Click;
-
-            // События DataGridView
             dataGridView1.SelectionChanged += DataGridView1_SelectionChanged;
             dataGridView1.CellDoubleClick += DataGridView1_CellDoubleClick;
             dataGridView1.KeyDown += DataGridView1_KeyDown;
-
-            // Настройка плейсхолдеров и автоформатирования
             SetupPlaceholders();
             SetupAutoFormatting();
         }
@@ -408,52 +315,78 @@ namespace prototip
             label3.Text = $"Количество записей: {dataGridView1.Rows.Count}";
         }
 
-        /// <summary>
-        /// Обработчик изменения текста поиска
-        /// Запускает фильтрацию
-        /// </summary>
-        private void OnSearchTextChanged(object sender, EventArgs e)
+        private void TextBox6_TextChanged(object sender, EventArgs e)
         {
-            ApplySearchFilter();
-        }
-
-        /// <summary>
-        /// Применение фильтра поиска по номеру телефона
-        /// Поиск осуществляется по первым 4 цифрам
-        /// </summary>
-        private void ApplySearchFilter()
-        {
-            if (clientsList == null) return;
-
             string searchText = textBox6.Text.Trim();
 
-            // Если поиск пустой или плейсхолдер - показываем всех клиентов
-            if (string.IsNullOrWhiteSpace(searchText) || searchText == "Поиск по телефону...")
-            {
-                dataGridView1.DataSource = allClients;
-            }
-            else
-            {
-                // Извлекаем только цифры из поискового запроса
-                string phoneDigits = new string(searchText.Where(char.IsDigit).ToArray());
+            // Если поле пустое или плейсхолдер - выходим
+            if (string.IsNullOrEmpty(searchText) || searchText == "Поиск по телефону...")
+                return;
 
-                // Если введено минимум 4 цифры, выполняем поиск
-                if (phoneDigits.Length >= 4)
-                {
-                    var filtered = clientsList.Where(c =>
-                        c.PhoneNumber.Contains(phoneDigits.Substring(0, Math.Min(4, phoneDigits.Length))))
-                        .ToList();
+            // Оставляем только цифры
+            string digits = new string(searchText.Where(char.IsDigit).ToArray());
 
-                    dataGridView1.DataSource = new BindingList<Client>(filtered);
-                }
-                else
-                {
-                    // Если цифр меньше 4, показываем всех
-                    dataGridView1.DataSource = allClients;
-                }
+            // Если меньше 4 цифр - выходим
+            if (digits.Length < 4)
+                return;
+
+            // Ищем все совпадения
+            foundIndexes.Clear();
+            for (int i = 0; i < clientsList.Count; i++)
+            {
+                string phone = new string(clientsList[i].PhoneNumber.Where(char.IsDigit).ToArray());
+                if (phone.Contains(digits))
+                    foundIndexes.Add(i);
             }
 
-            UpdateRecordCount();
+            // Выделяем первое совпадение
+            if (foundIndexes.Count > 0)
+            {
+                currentFoundIndex = 0;
+                SelectFoundRow(foundIndexes[0]);
+            }
+        }
+
+        private void TextBox6_KeyDown(object sender, KeyEventArgs e)
+        {
+            // Пробел - следующее совпадение
+            if (e.KeyCode == Keys.Space && foundIndexes.Count > 0)
+            {
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+
+                currentFoundIndex++;
+                if (currentFoundIndex >= foundIndexes.Count)
+                    currentFoundIndex = 0;
+
+                SelectFoundRow(foundIndexes[currentFoundIndex]);
+            }
+        }
+
+        private void SelectFoundRow(int rowIndex)
+        {
+            if (rowIndex < dataGridView1.Rows.Count)
+            {
+                dataGridView1.ClearSelection();
+                dataGridView1.Rows[rowIndex].Selected = true;
+                dataGridView1.FirstDisplayedScrollingRowIndex = rowIndex;
+            }
+        }
+
+        private void btnReset_Click(object sender, EventArgs e)
+        {
+            textBox6.Text = "Поиск по телефону...";
+            textBox6.ForeColor = SystemColors.GrayText;
+            foundIndexes.Clear();
+            currentFoundIndex = -1;
+            dataGridView1.ClearSelection();
+        }
+
+        private void textBox6_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            // Только цифры
+            if (!char.IsDigit(e.KeyChar) && !char.IsControl(e.KeyChar))
+                e.Handled = true;
         }
 
         /// <summary>
@@ -683,25 +616,16 @@ namespace prototip
             dataGridView1.ClearSelection();
         }
 
-        /// <summary>
-        /// Обработчик кнопки сброса поиска
-        /// </summary>
-        private void btnReset_Click(object sender, EventArgs e)
-        {
-            textBox6.Text = "Поиск по телефону...";
-            textBox6.ForeColor = SystemColors.GrayText;
-            LoadClients();
-        }
 
         /// <summary>
         /// Обработчик кнопки возврата в главное меню
         /// </summary>
         private void btnMenu_Click(object sender, EventArgs e)
         {
-            this.Visible = false;
+            this.Hide();
             MainManager auto = new MainManager();
             auto.ShowDialog();
-            this.Visible = true;
+            this.Close();
         }
 
         /// <summary>
@@ -767,17 +691,6 @@ namespace prototip
                     MessageBox.Show($"Ошибка при удалении: {ex.Message}", "Ошибка",
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
-            }
-        }
-
-        /// <summary>
-        /// Ограничение ввода в поле поиска только цифрами
-        /// </summary>
-        private void textBox6_KeyPress(object sender, KeyPressEventArgs e)
-        {
-            if (!char.IsDigit(e.KeyChar) && !char.IsControl(e.KeyChar))
-            {
-                e.Handled = true;
             }
         }
     }

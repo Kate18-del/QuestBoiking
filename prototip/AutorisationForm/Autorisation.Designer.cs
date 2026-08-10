@@ -50,7 +50,7 @@ namespace prototip
             // 
             this.label1.AutoSize = true;
             this.label1.Font = new System.Drawing.Font("Comic Sans MS", 18F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.label1.Location = new System.Drawing.Point(70, 20);
+            this.label1.Location = new System.Drawing.Point(122, 20);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(162, 33);
             this.label1.TabIndex = 0;
@@ -129,7 +129,7 @@ namespace prototip
             // 
             this.pbCaptcha.BackColor = System.Drawing.Color.White;
             this.pbCaptcha.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pbCaptcha.Location = new System.Drawing.Point(320, 20);
+            this.pbCaptcha.Location = new System.Drawing.Point(334, 20);
             this.pbCaptcha.Name = "pbCaptcha";
             this.pbCaptcha.Size = new System.Drawing.Size(250, 80);
             this.pbCaptcha.TabIndex = 10;
@@ -153,7 +153,7 @@ namespace prototip
             // 
             this.txtCaptcha.CharacterCasing = System.Windows.Forms.CharacterCasing.Upper;
             this.txtCaptcha.Font = new System.Drawing.Font("Comic Sans MS", 12F);
-            this.txtCaptcha.Location = new System.Drawing.Point(378, 117);
+            this.txtCaptcha.Location = new System.Drawing.Point(386, 118);
             this.txtCaptcha.MaxLength = 4;
             this.txtCaptcha.Name = "txtCaptcha";
             this.txtCaptcha.Size = new System.Drawing.Size(100, 30);
@@ -187,7 +187,7 @@ namespace prototip
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Window;
-            this.ClientSize = new System.Drawing.Size(582, 333);
+            this.ClientSize = new System.Drawing.Size(596, 333);
             this.Controls.Add(this.btnExit);
             this.Controls.Add(this.btnLogin);
             this.Controls.Add(this.txtPassword);
